@@ -49,10 +49,15 @@ def PopulatePositions(players):
 				player.position = pos_dict[player.index]
 			except:
 				pass
-def PickRandomCards(number, deck):
-	cards = np.random.choice(deck.contents, number, replace=False)
+
+def MapStreet(idx):
+	streets = dict([(2,'PreFlop'),(3,'Flop'),(4,'Turn'),(5,'River')])
+	return streets[idx]
+
+def PickRandomCards(number):
+	cards = np.random.choice(hand.deck.contents, number, replace=False)
 	for card in cards:
-		deck.RemoveCard(card)
+		hand.deck.RemoveCard(card)
 	return cards
 
 def Action(options):
@@ -107,6 +112,9 @@ class Player:
 		if any(p.curbet > self.curbet for p in [p for p in hand.players if isinstance(p.curbet, int)]):
 			options.append("Call")
 			options.append("Raise")
+		elif hand.street == 2 and self.curbet == hand.small_blind*2:
+			options.append("Check")
+			options.append("Raise")
 		else:
 			options.append("Check")
 			options.append("Bet")
@@ -131,6 +139,11 @@ class Player:
 	def Raise(self, *args, **kwargs):
 		# Let's get all the bets in the current session, and sort them by size:
 		bets = sorted(list(set([p.curbet for p in hand.players if isinstance(p.curbet, int)])), reverse=True)
+		# Big blind preflop is a raise if everybody called, but would break as there  is no smaller bet
+		try:
+			bets[1]
+		except IndexError:
+			bets.append(0)
 		# Min raise is twice the difference betweem the larger and second larger bet, adding self.curbet as it's going to be subtracted
 		minbet = bets[0]+(bets[0]-bets[1])
 		# Only exception is the first raise preflop that has to be at least 2*BB
@@ -150,11 +163,9 @@ class Hand:
 	def __init__(self):
 		self.deck = Deck()
 		self.pot = 0
-		self.street = 0
+		self.street = 1
 		self.small_blind = 10
-		self.minbet = self.small_blind*2
-		self.curbet = self.minbet
-		self.table_cards = []
+		self.com_cards = []
 		self.players = deque([ Player(i) for i in players ])
 		# If it's the first round, we need to randompy choose a dealer
 		self.first_dealer_idx = list(self.players).index(np.random.choice(self.players, 1, replace=False)[0])
@@ -171,15 +182,17 @@ class Hand:
 		# Let's convert player indexes into table positions
 		PopulatePositions(self.players)
 	def DealOntable(self, number):
-		self.cards = [*self.cards, *PickRandomCards(number)]
+		self.com_cards = [*self.com_cards, *PickRandomCards(number)]
 	def NewStreet(self):
+		self.street +=1
+		print("STREET:", MapStreet(self.street))
 		# Remove folded players
-		for p in self.players: 
-			if p.curbet == 'Fold': self.players.remove(p)
+		self.players = [p for p in self.players if not p.curbet == 'Fold']
 		# At each street we need to clear the bets
 		for p in self.players: p.curbet = 0
 		# and set the minimum bet to the big blind again
 		self.minbet = self.small_blind*2
+		self.curbet = self.minbet
 	def BettingRound(self):
 		# Start betting round
 		while True:
@@ -189,7 +202,8 @@ class Hand:
 					continue
 				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", p.position)
 				print("BEFORE", [p.curbet for p in self.players])
-				print("CARDS", [[card.rank, card.suit] for card in p.cards])
+				print(p.name, "CARDS", [[card.rank, card.suit] for card in p.cards])
+				print("BOARD", [[card.rank, card.suit] for card in self.com_cards])
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				if not p.curbet == "Fold": self.curbet = bet
 				#curbet = p.Bet(minbet=self.minbet)
@@ -198,9 +212,10 @@ class Hand:
 				end = True if all(p.curbet == self.curbet for p in [p for p in self.players if isinstance(p.curbet, int)]) and not (idx == len(self.players)-2 and self.curbet == self.small_blind*2) else False
 				if end: break
 			if end: break
-	def Preflop(self):
+	def PreFlop(self):
+		self.NewStreet()
 		# Let's deal the cards to each player
-		for p in self.players: p.cards = PickRandomCards(2, self.deck)
+		for p in self.players: p.cards = PickRandomCards(2)
 		# Small and big blind, pay!
 		self.players[-2].Bet(betsize=self.small_blind)
 		self.players[-1].Bet(betsize=self.small_blind*2)
@@ -210,13 +225,25 @@ class Hand:
 		self.NewStreet()
 		self.DealOntable(3)
 		self.BettingRound()
-
+	def Turn(self):
+		self.NewStreet()
+		self.DealOntable(1)
+		self.BettingRound()
+	def River(self):
+		self.NewStreet()
+		self.DealOntable(1)
+		self.BettingRound()
+	
 
 players =  ['A', 'B', 'C', 'D']
 
 hand = Hand()
-hand.Preflop()
+hand.PreFlop()
 for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
 print("POT", hand.pot)
 hand.Flop()
+for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
+print("POT", hand.pot)
+hand.Turn()
+for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
 print("POT", hand.pot)
