@@ -96,6 +96,7 @@ class Deck:
 class Player:
 	def __init__(self, name):
 		self.index = None
+		self.flop_index = None
 		self.position = None
 		self.name = name
 		self.stack = 1500
@@ -150,7 +151,7 @@ class Player:
 		if bets[0] == 2*hand.small_blind: minbet = 4*hand.small_blind
 		return self.Bet(minbet=minbet)
 	def Check(self, minbet):
-		return self.Call(minbet=minbet)
+		return self.Bet(minbet=minbet, betsize=0)
 	def Call(self, minbet):
 		minbet = minbet - self.curbet
 		print("Call", minbet)
@@ -172,13 +173,16 @@ class Hand:
 		self.players[self.first_dealer_idx].isdealer = True
 		# Now let's rotate the players so that the dealer is in position -3
 		rotate = ((len(self.players)-self.first_dealer_idx)-3)
-		# Get the index of the dealer according to number of players
-		self.dealer_idx = (len(self.players)-1)-2
 		self.players.rotate(rotate)
-		# Let's turn players into a list again to be able to remove items while looping
-		self.players = list(self.players)
 		# Lets write the initial index inside the players so that we never loose track of what the inital positions were
 		for idx, p in enumerate(self.players): p.index = idx
+		# Lets rotate the players again to get the order they play on the flop onwards
+		self.players.rotate(2)
+		for idx, p in enumerate(self.players): p.flop_index = idx
+		# Lets reposition the players
+		self.players.rotate(-2)
+		# Let's turn players into a list again to be able to remove items while looping
+		self.players = list(self.players)
 		# Let's convert player indexes into table positions
 		PopulatePositions(self.players)
 	def DealOntable(self, number):
@@ -197,6 +201,10 @@ class Hand:
 		# Start betting round
 		while True:
 			for idx, p in enumerate(self.players):
+				# End if all players but this one have folded
+				if len([p for p in self.players if isinstance(p.curbet, int)]) == 1:
+					end = True
+					break
 				# Skip if has folded
 				if p.curbet == 'Fold':
 					continue
@@ -209,7 +217,10 @@ class Hand:
 				#curbet = p.Bet(minbet=self.minbet)
 				print([(p.curbet, p.position) for p in self.players])
 				print(idx, len(self.players), self.curbet)
-				end = True if all(p.curbet == self.curbet for p in [p for p in self.players if isinstance(p.curbet, int)]) and not (idx == len(self.players)-2 and self.curbet == self.small_blind*2) else False
+				if self.street == 2: # PreFlop
+					end = True if all(p.curbet == self.curbet for p in [p for p in self.players if isinstance(p.curbet, int)]) and not (idx == len(self.players)-2 and self.curbet == self.small_blind*2) else False
+				else:
+					end = True if (all(p.curbet == self.curbet for p in [p for p in self.players if isinstance(p.curbet, int)]) and self.curbet !=0 ) or (all(p.curbet == 0 for p in [p for p in self.players if isinstance(p.curbet, int)]) and idx == len(self.players)-1) else False
 				if end: break
 			if end: break
 	def PreFlop(self):
@@ -223,6 +234,8 @@ class Hand:
 		self.BettingRound()
 	def Flop(self):
 		self.NewStreet()
+		# Sort remaining players based on their flop_index
+		self.players.sort(key=lambda p: p.flop_index)
 		self.DealOntable(3)
 		self.BettingRound()
 	def Turn(self):
@@ -238,6 +251,8 @@ class Hand:
 players =  ['A', 'B', 'C', 'D']
 
 hand = Hand()
+
+# for p in hand.players: print(p.name, p.position, p.index, p.flop_index)
 hand.PreFlop()
 for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
 print("POT", hand.pot)
@@ -245,5 +260,8 @@ hand.Flop()
 for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
 print("POT", hand.pot)
 hand.Turn()
+for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
+print("POT", hand.pot)
+hand.River()
 for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
 print("POT", hand.pot)
