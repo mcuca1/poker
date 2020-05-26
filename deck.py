@@ -6,7 +6,49 @@ import random
 from random import shuffle
 import numpy as np
 from collections import deque
+import inspect
  
+def PopulatePositions(players):
+	number_of_players = len(players)
+	positions = []
+	if number_of_players > 2:
+		positions.append(dict([
+		(0, 'UTG'),
+		(1, 'UTG+1'),
+		(2, 'UTG+2'),
+		(3, 'UTG+3'),
+		(4, 'UTG+4'),
+		(5, 'UTG+5'),
+		(6, '7th'),
+		(7, '8th'),
+		(8, '9th'),
+		(9, '10th'),
+		(number_of_players-1, 'Big Blind'),
+		(number_of_players-2, 'Small Blind'),
+		(number_of_players-3, 'Dealer'),
+		(number_of_players-4, 'CutOff'),
+		(number_of_players-5, 'HiJack'),
+		]))
+	if number_of_players > 4 and number_of_players <=6:
+		positions.append(dict([
+		(0, 'UTG'),
+		(1, 'UTG+1')
+		]))
+	if number_of_players > 2 and number_of_players <=4:
+		positions.append(dict([
+		(0, 'UTG')
+		]))		
+	if number_of_players == 2:
+		positions.append(dict([
+		(-0, 'Small Blind'),
+		(-1, 'Dealer')
+		]))
+	for player in players:
+		for pos_dict in positions:
+			try:
+				player.position = pos_dict[player.index]
+			except:
+				pass
 def PickRandomCards(number, deck):
 	cards = np.random.choice(deck.contents, number, replace=False)
 	for card in cards:
@@ -49,6 +91,7 @@ class Deck:
 class Player:
 	def __init__(self, name):
 		self.index = None
+		self.position = None
 		self.name = name
 		self.stack = 1500
 		self.curbet = 0
@@ -107,6 +150,7 @@ class Hand:
 	def __init__(self):
 		self.deck = Deck()
 		self.pot = 0
+		self.street = 0
 		self.small_blind = 10
 		self.minbet = self.small_blind*2
 		self.curbet = self.minbet
@@ -124,34 +168,55 @@ class Hand:
 		self.players = list(self.players)
 		# Lets write the initial index inside the players so that we never loose track of what the inital positions were
 		for idx, p in enumerate(self.players): p.index = idx
-		# Let's deal the cards to each player
-		for p in self.players: p.cards = PickRandomCards(2, self.deck)
-	def Preflop(self):
-		# Small and big blind, pay!
-		self.players[-2].Bet(betsize=self.small_blind)
-		self.players[-1].Bet(betsize=self.small_blind*2)
+		# Let's convert player indexes into table positions
+		PopulatePositions(self.players)
+	def DealOntable(self, number):
+		self.cards = [*self.cards, *PickRandomCards(number)]
+	def NewStreet(self):
+		# Remove folded players
+		for p in self.players: 
+			if p.curbet == 'Fold': self.players.remove(p)
+		# At each street we need to clear the bets
+		for p in self.players: p.curbet = 0
+		# and set the minimum bet to the big blind again
+		self.minbet = self.small_blind*2
+	def BettingRound(self):
 		# Start betting round
-		# 1st player to dealer
 		while True:
 			for idx, p in enumerate(self.players):
 				# Skip if has folded
 				if p.curbet == 'Fold':
 					continue
-				print("PL", p.name, "CUR", p.curbet, "IDX", p.index)
+				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", p.position)
 				print("BEFORE", [p.curbet for p in self.players])
+				print("CARDS", [[card.rank, card.suit] for card in p.cards])
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				if not p.curbet == "Fold": self.curbet = bet
 				#curbet = p.Bet(minbet=self.minbet)
-				print([p.curbet for p in self.players])
+				print([(p.curbet, p.position) for p in self.players])
 				print(idx, len(self.players), self.curbet)
 				end = True if all(p.curbet == self.curbet for p in [p for p in self.players if isinstance(p.curbet, int)]) and not (idx == len(self.players)-2 and self.curbet == self.small_blind*2) else False
 				if end: break
 			if end: break
-
+	def Preflop(self):
+		# Let's deal the cards to each player
+		for p in self.players: p.cards = PickRandomCards(2, self.deck)
+		# Small and big blind, pay!
+		self.players[-2].Bet(betsize=self.small_blind)
+		self.players[-1].Bet(betsize=self.small_blind*2)
+		# Start betting round
+		self.BettingRound()
+	def Flop(self):
+		self.NewStreet()
+		self.DealOntable(3)
+		self.BettingRound()
 
 
 players =  ['A', 'B', 'C', 'D']
 
 hand = Hand()
 hand.Preflop()
-for p in hand.players: print(p.name, p.stack, p.curbet)
+for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
+print("POT", hand.pot)
+hand.Flop()
+print("POT", hand.pot)
