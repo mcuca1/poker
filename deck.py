@@ -8,16 +8,15 @@ import numpy as np
 from collections import deque
 import inspect
 
-class HandRank:
+def HandRank(cards):
 	def sort_cards_by_rank(cards):
 		rankdict = dict([(t[1], t[0]) for t in list(enumerate(RANKS()))])
 		cards.sort(key=lambda x: rankdict[x.rank], reverse=True)
 		return cards
+	return ('whoknows', sort_cards_by_rank(cards))
+
 def PrintCards(cards):
 	return [(card.rank, card.suit) for card in cards]
-
-def BestHand(cards):
-	return ('whoknows', HandRank.sort_cards_by_rank(cards))
 
 def PopulatePositions(players):
 	number_of_players = len(players)
@@ -115,15 +114,15 @@ class Player(object):
 		self._cards = None
 		self.hand = None
 		self.isdealer = False
-	def GetBestHand(self):
-		self.hand = BestHand([x for x in self.cards] + [x for x in hand.comcards])
+	def GetHandRank(self):
+		self.hand = HandRank([x for x in self.cards] + [x for x in hand.comcards])
 	@property
 	def cards(self):
 		return self._cards
 	@cards.setter
 	def cards(self, cards):
 		self._cards = cards
-		self.GetBestHand()
+		self.GetHandRank()
 	def GenOptions(self):
 		options = []
 		# You can always fold
@@ -213,7 +212,7 @@ class Hand(object):
 	@comcards.setter
 	def comcards(self, cards):
 		self._comcards = cards
-		for p in self.players: p.GetBestHand()
+		for p in self.players: p.GetHandRank()
 	def DealOntable(self, number):
 		self.comcards = [*self.comcards, *PickRandomCards(number)]
 	def NewStreet(self):
