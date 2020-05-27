@@ -162,11 +162,13 @@ class Player:
 
 class Hand:
 	def __init__(self):
+		self.over = False
 		self.deck = Deck()
 		self.pot = 0
 		self.street = 1
 		self.small_blind = 10
 		self.com_cards = []
+		self.folded_players = []
 		self.players = deque([ Player(i) for i in players ])
 		# If it's the first round, we need to randompy choose a dealer
 		self.first_dealer_idx = list(self.players).index(np.random.choice(self.players, 1, replace=False)[0])
@@ -190,6 +192,8 @@ class Hand:
 	def NewStreet(self):
 		self.street +=1
 		print("STREET:", MapStreet(self.street))
+		# Move foldeed players
+		self.folded_players = self.folded_players + [p for p in self.players if p.curbet == 'Fold']
 		# Remove folded players
 		self.players = [p for p in self.players if not p.curbet == 'Fold']
 		# At each street we need to clear the bets
@@ -197,6 +201,12 @@ class Hand:
 		# and set the minimum bet to the big blind again
 		self.minbet = self.small_blind*2
 		self.curbet = self.minbet
+	def IsItOver(self):
+		if self.over:
+			winning_player = next(filter(lambda p: p.curbet != 'Fold', self.players))
+			winning_player.stack = winning_player.stack + self.pot
+			self.pot = 0
+			return True
 	def BettingRound(self):
 		# Start betting round
 		while True:
@@ -204,6 +214,7 @@ class Hand:
 				# End if all players but this one have folded
 				if len([p for p in self.players if isinstance(p.curbet, int)]) == 1:
 					end = True
+					self.over = True
 					break
 				# Skip if has folded
 				if p.curbet == 'Fold':
@@ -232,36 +243,37 @@ class Hand:
 		self.players[-1].Bet(betsize=self.small_blind*2)
 		# Start betting round
 		self.BettingRound()
+		return True if self.IsItOver() else False
 	def Flop(self):
+		if self.IsItOver(): return False
 		self.NewStreet()
 		# Sort remaining players based on their flop_index
 		self.players.sort(key=lambda p: p.flop_index)
 		self.DealOntable(3)
 		self.BettingRound()
+		return True if self.IsItOver() else False
 	def Turn(self):
+		if self.IsItOver(): return False
 		self.NewStreet()
 		self.DealOntable(1)
 		self.BettingRound()
+		return True if self.IsItOver() else False
 	def River(self):
+		if self.IsItOver(): return False
 		self.NewStreet()
 		self.DealOntable(1)
 		self.BettingRound()
 	
 
 players =  ['A', 'B', 'C', 'D']
-
+streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 
-# for p in hand.players: print(p.name, p.position, p.index, p.flop_index)
-hand.PreFlop()
-for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
-print("POT", hand.pot)
-hand.Flop()
-for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
-print("POT", hand.pot)
-hand.Turn()
-for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
-print("POT", hand.pot)
-hand.River()
-for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
-print("POT", hand.pot)
+for p in hand.players: print(p.name, p.position, p.index, p.flop_index)
+
+for street in streets:
+	print('##########', street)
+	if getattr(hand, street)():
+		for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
+		for p in hand.folded_players: print(p.name, p.stack, p.curbet, p.position)
+	print("POT", hand.pot)
