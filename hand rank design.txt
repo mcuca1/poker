@@ -1,0 +1,24 @@
+Hand rank design
+
+player receives cards, when cards are updated:
+
+function is called in player which: 
+
+1) gets its own cards and combines them with table cards
+2) feeds all the cards into the get_best_hand function
+3) the function goes through all the possible hands in poker and returns the highest hand that matches, it's "name" and also the 5 cards that compose it
+
+
+then we need a function that at showdown:
+
+1) gets all the (best hands) of the players still playing
+2) returns them sorted by strongest to weakest, this is needed for side pots decisions
+
+this function:
+
+obviously it can use hand rankings to figure out the order, but will have to make decisions if the 2 hands are the same, for example
+
+1) both have one pair, check which pair is higher, if same check for any higher card
+2) same with both have 2 pair, check which first pair is higher, then check which second pair, then check last card
+3) set, check higher set..etc
+4) straight, full house, can this be generalised somehow???

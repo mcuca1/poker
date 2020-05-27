@@ -7,7 +7,18 @@ from random import shuffle
 import numpy as np
 from collections import deque
 import inspect
- 
+
+class HandRank:
+	def sort_cards_by_rank(cards):
+		rankdict = dict([(t[1], t[0]) for t in list(enumerate(RANKS()))])
+		cards.sort(key=lambda x: rankdict[x.rank], reverse=True)
+		return cards
+def PrintCards(cards):
+	return [(card.rank, card.suit) for card in cards]
+
+def BestHand(cards):
+	return ('whoknows', HandRank.sort_cards_by_rank(cards))
+
 def PopulatePositions(players):
 	number_of_players = len(players)
 	positions = []
@@ -74,7 +85,7 @@ def Action(options):
 		except:
 			continue
 
-def RANKS(): return [ "A", "2", "3", "4", "5", "6", "7","8", "9", "T", "J", "Q", "K" ]
+def RANKS(): return [ "2", "3", "4", "5", "6", "7","8", "9", "T", "J", "Q", "K", "A" ]
 def SUITS(): return [ "Clubs", "Diamonds", "Hearts", "Spades" ]
 
 class Card:
@@ -93,7 +104,7 @@ class Deck:
 	def RemoveCard(self, card):
 		self.contents.remove(card)
 
-class Player:
+class Player(object):
 	def __init__(self, name):
 		self.index = None
 		self.flop_index = None
@@ -101,9 +112,18 @@ class Player:
 		self.name = name
 		self.stack = 1500
 		self.curbet = 0
-		self.cards = False
+		self._cards = None
+		self.hand = None
 		self.isdealer = False
-		#self.options = ['Fold', 'Check', 'Bet', 'Call']
+	def GetBestHand(self):
+		self.hand = BestHand([x for x in self.cards] + [x for x in hand.comcards])
+	@property
+	def cards(self):
+		return self._cards
+	@cards.setter
+	def cards(self, cards):
+		self._cards = cards
+		self.GetBestHand()
 	def GenOptions(self):
 		options = []
 		# You can always fold
@@ -160,14 +180,14 @@ class Player:
 		#hand.players.remove(self)
 		self.curbet = "Fold"
 
-class Hand:
+class Hand(object):
 	def __init__(self):
 		self.over = False
 		self.deck = Deck()
 		self.pot = 0
 		self.street = 1
 		self.small_blind = 10
-		self.com_cards = []
+		self._comcards = []
 		self.folded_players = []
 		self.players = deque([ Player(i) for i in players ])
 		# If it's the first round, we need to randompy choose a dealer
@@ -187,8 +207,15 @@ class Hand:
 		self.players = list(self.players)
 		# Let's convert player indexes into table positions
 		PopulatePositions(self.players)
+	@property
+	def comcards(self):
+		return self._comcards
+	@comcards.setter
+	def comcards(self, cards):
+		self._comcards = cards
+		for p in self.players: p.GetBestHand()
 	def DealOntable(self, number):
-		self.com_cards = [*self.com_cards, *PickRandomCards(number)]
+		self.comcards = [*self.comcards, *PickRandomCards(number)]
 	def NewStreet(self):
 		self.street +=1
 		print("STREET:", MapStreet(self.street))
@@ -221,8 +248,8 @@ class Hand:
 					continue
 				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", p.position)
 				print("BEFORE", [p.curbet for p in self.players])
-				print(p.name, "CARDS", [[card.rank, card.suit] for card in p.cards])
-				print("BOARD", [[card.rank, card.suit] for card in self.com_cards])
+				print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand[0], PrintCards(p.hand[1]))
+				print("BOARD", [[card.rank, card.suit] for card in self.comcards])
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				if not p.curbet == "Fold": self.curbet = bet
 				#curbet = p.Bet(minbet=self.minbet)
