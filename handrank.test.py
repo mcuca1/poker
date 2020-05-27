@@ -7,8 +7,11 @@ import inspect
 def HandRank(cards):
 	# A hand are the 5 best cards!
 	cards_per_hand = 5
+	rankdict = dict([(t[1], t[0]) for t in list(enumerate(RANKS()))])
+	def SortUniqueRanks(cards):
+		ranks = set(list([card.rank for card in cards]))
+		return sorted(ranks, key=lambda x: rankdict[x], reverse=True)
 	def SortCardsByRank(cards):
-		rankdict = dict([(t[1], t[0]) for t in list(enumerate(RANKS()))])
 		cards.sort(key=lambda x: rankdict[x.rank], reverse=True)
 		return cards
 	# Pairs, sets and quads are one rank hands, changing only the number of cards
@@ -30,19 +33,19 @@ def HandRank(cards):
 		return SortCardsByRank(cards)[:cards_per_hand]
 	def Pair(cards):
 		return OneRankHand(cards, 2)
-	# def TwoPair(cards):
-	# 	# Kickers are the best cards left between the hand and the total 5
-	# 	kickers = 1
-	# 	pairs = []
-	# 	for rank in [x.rank for x in SortCardsByRank(cards)]:
-	# 		if sum(card.rank == rank for card in cards) == 2: pairs.append([card for card in cards if card.rank == rank])
-	# 	if len(pairs) >=2:
-	# 		for card in [card for pair in pairs[:2] for card in pair]: cards.remove(card)
-	# 		kicker = SortCardsByRank(cards)[0]
-	# 		return [card for pair in pairs[:2] for card in pair] + kicker
-	# 	return []
-	# def Set(cards):
-	# 	return OneRankHand(cards, 3)
+	def TwoPair(cards):
+		# Kickers are the best cards left between the hand and the total 5
+		kickers = 1
+		pairs = []
+		for rank in SortUniqueRanks(cards):
+			if sum(card.rank == rank for card in cards) == 2: pairs.append([card for card in cards if card.rank == rank])
+		if len(pairs) >=2:
+			for card in [card for pair in pairs[:2] for card in pair]: cards.remove(card)
+			kicker = SortCardsByRank(cards)[0]
+			return [card for pair in pairs[:2] for card in pair] + [kicker]
+		return []
+	def Set(cards):
+		return OneRankHand(cards, 3)
 	# def Quads(cards):
 	# 	return OneRankHand(cards, 4)
 	# Exec all hand functions, the first strongest we find is our hand
@@ -64,10 +67,11 @@ class Card:
 	def __eq__(self, other):
 		return self.rank == other.rank and self.suit == other.suit
 
-player_cards = [Card("2", "Clubs"), Card("3", "Spades")]
-community_cards = [Card("2", "Diamonds"), Card("T", "Spades"), Card("3", "Spades"),  Card("T", "Diamonds")]
+player_cards = [Card("2", "Clubs"), Card("3", "Hearts")]
+community_cards = [Card("2", "Diamonds"), Card("3", "Clubs"), Card("3", "Spades"),  Card("T", "Diamonds")]
 cards = player_cards + community_cards
 
 hand, cards = HandRank(cards)
 
 print(hand, [(card.rank, card.suit) for card in cards])
+# Sorting is flipping????
