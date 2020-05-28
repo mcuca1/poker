@@ -14,20 +14,22 @@ def HandRank(cards):
 	def SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS())):
 		cards.sort(key=lambda x: rankdict[x.rank], reverse=True)
 		return cards
+	def GetRankHandRanks(cards, n):
+		ranks = []
+		for rank in SortUniqueRanks(cards):
+			if sum(card.rank == rank for card in cards) == n: ranks.append(rank)
+		return ranks
 	# Pairs, sets and quads are one rank hands, changing only the number of cards
 	def OneRankHand(cards, n):
 		# Kickers are the best cards left between the hand and the total 5
 		kickers = 5 - n
-		# Return highest pair + highest 3 cards left
-		highest_rankhand = False
-		for rank in [x.rank for x in SortCardsByRank(cards)]:
-			if sum(card.rank == rank for card in cards) == n: highest_rankhand = [card for card in cards if card.rank == rank]
-			if highest_rankhand: break
-		if highest_rankhand:
-			for card in highest_rankhand: cards.remove(card)
-			cards = SortCardsByRank(cards)[:kickers]
-			return highest_rankhand + cards
-		return []
+		# Return highest pair + highest kickers
+		rankhand_ranks = GetRankHandRanks(cards, n)
+		if len(rankhand_ranks) == 0: return []
+		highest_rankhand = [card for card in cards if card.rank in rankhand_ranks[0]]
+		for card in highest_rankhand: cards.remove(card)
+		cards = SortCardsByRank(cards)[:kickers]
+		return highest_rankhand + cards
 	def GetStraightRanks(cards):
 		sorted_ranks, sorted_ranks_acelow = SortUniqueRanks(cards), SortUniqueRanks(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False)))
 		combinations = []
@@ -77,7 +79,11 @@ def HandRank(cards):
 		cards = SortCardsByRank(cards)
 		return [ card for card in cards if card.rank in flush_ranks[0] ]
 	def FullHouse(cards):
-		return []
+		set_ranks = GetRankHandRanks(cards, 3)
+		pair_ranks = GetRankHandRanks(cards, 2)
+		if len(cards) < 5 or len(set_ranks) == 0 or len(pair_ranks) == 0: return []
+		return [ card for card in cards if card.rank in set_ranks[0] ] + [ card for card in cards if card.rank in pair_ranks[0] ]
+		# we want to order the full house with set first..
 	def Quads(cards):
 		return OneRankHand(cards, 4)
 	def StraightFlush(cards):
@@ -115,7 +121,7 @@ class Card:
 		return self.rank == other.rank and self.suit == other.suit
 
 player_cards = [Card("K", "Clubs"), Card("K", "Diamonds")]
-community_cards = [Card("K", "Spades"), Card("K", "Hearts"), Card("4", "Clubs"),  Card("T", "Clubs"), Card("A", "Clubs")]
+community_cards = [Card("J", "Spades"), Card("J", "Hearts"), Card("J", "Diamonds"),  Card("T", "Clubs"), Card("J", "Clubs")]
 cards = player_cards + community_cards
 
 hand, cards = HandRank(cards)
