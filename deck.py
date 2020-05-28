@@ -131,6 +131,7 @@ class Player(object):
 			options.append("Check")
 			options.append("Bet")
 		options.append("AllIn")
+		# and they are in the same pot, which they wouldnt be if they went all in on flop with smaller stack
 		if any([p for p in hand.players if isinstance(p.curbet, int) and p.curbet >= self.stack]):
 			options.remove("Raise")
 		return options
@@ -142,10 +143,10 @@ class Player(object):
 					raise ValueError
 				return betsize
 			except ValueError:
-				print("Invalid integer. The number must be in the range of %s-%s." % (minbet.size, self.stack))
+				print("Invalid integer. The number must be in the range of %s-%s." % (minbet, self.stack))
 	def Bet(self, minbet=False, betsize=False):
 		minbet = minbet - self.curbet
-		if betsize is False: betsize = self.BetPrompt(minbet)  
+		if betsize is False: betsize = self.BetPrompt(minbet)
 		self.curbet = self.curbet + betsize
 		self.stack = self.stack - betsize
 		hand.pot = hand.pot + betsize
@@ -170,8 +171,8 @@ class Player(object):
 		return self.Bet(minbet=minbet, betsize=self.stack)
 	def Call(self, minbet):
 		minbet = minbet - self.curbet
-		print("Call", minbet)
-		return self.Bet(minbet=minbet, betsize=minbet)
+		betsize = minbet if minbet <= self.stack else self.stack 
+		return self.Bet(minbet=minbet, betsize=betsize)
 	def Fold (self, *args, **kwargs):
 		#hand.players.remove(self)
 		self.curbet = "Fold"
@@ -260,6 +261,7 @@ class Hand(object):
 				print("BOARD", PrintCards(self.comcards))
 				print("YOUR STACK:", p.stack)
 				print("TO CALL", ((self.minbet - p.curbet) if (self.minbet - p.curbet) < p.stack else p.stack))
+				print("POTS:", self.pot)
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				if not p.curbet == "Fold": self.curbet = bet
 				#curbet = p.Bet(minbet=self.minbet)

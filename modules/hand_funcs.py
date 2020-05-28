@@ -14,8 +14,6 @@ def SortUniqueRanks(cards, rankdict=ranks_to_rankdict(RANKS())):
 	ranks = set(list([card.rank for card in cards]))
 	return sorted(ranks, key=lambda x: rankdict[x], reverse=True)
 def SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS())):
-	print(rankdict)
-	print(cards)
 	cards.sort(key=lambda x: rankdict[x.rank], reverse=True)
 	return cards
 def GetRankHandRanks(cards, n):
