@@ -4,3 +4,33 @@ table, table players, start wity any stack
 big blind before turn..
 time to act
 side pots, is it a new betting round within?
+
+
+ideas
+tell player they have position or not to bettor, raiser
+
+straight
+
+you have to shift only twice max?
+return no of not 5
+check only once with reverse order
+populate cards with same suit first
+hands become classes with custom equal and greater 
+on showdown we return hands in order but 2 or more could have tied? side pots..
+
+
+if a player is all in you shouldnt be able to raise unless his stack is less 
+
+also following player can have smaller stack and be able to call only part of the raise, or the CALL!
+
+if you can raise second pot needs to be initiated if you do
+
+if you only call no need to second pot
+
+
+if all players are all in or folded no more betting, but it isn't over! need to go both streets
+
+Over and BettingOver should be bet callbacks..
+
+
+need to remove one of the same cards in a straight if they compose the straight..

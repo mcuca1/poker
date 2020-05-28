@@ -7,110 +7,10 @@ from random import shuffle
 import numpy as np
 from collections import deque
 import inspect
-
-def HandRank(cards):
-	def ranks_to_rankdict(ranks):
-		# rankdict to be used for sorting
-		return dict([(t[1], t[0]) for t in list(enumerate(ranks))])
-	def SortUniqueRanks(cards, rankdict=ranks_to_rankdict(RANKS())):
-		ranks = set(list([card.rank for card in cards]))
-		return sorted(ranks, key=lambda x: rankdict[x], reverse=True)
-	def SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS())):
-		cards.sort(key=lambda x: rankdict[x.rank], reverse=True)
-		return cards
-	def GetRankHandRanks(cards, n):
-		ranks = []
-		for rank in SortUniqueRanks(cards):
-			if sum(card.rank == rank for card in cards) == n: ranks.append(rank)
-		return ranks
-	# Pairs, sets and quads are one rank hands, changing only the number of cards
-	def OneRankHand(cards, n):
-		# Kickers are the best cards left between the hand and the total 5
-		kickers = 5 - n
-		# Return highest pair + highest kickers
-		rankhand_ranks = GetRankHandRanks(cards, n)
-		if len(rankhand_ranks) == 0: return []
-		highest_rankhand = [card for card in cards if card.rank in rankhand_ranks[0]]
-		for card in highest_rankhand: cards.remove(card)
-		cards = SortCardsByRank(cards)[:kickers]
-		return highest_rankhand + cards
-	def GetStraightRanks(cards):
-		sorted_ranks, sorted_ranks_acelow = SortUniqueRanks(cards), SortUniqueRanks(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False)))
-		combinations = []
-		straight_ranks = []
-		for ranks in [sorted_ranks, sorted_ranks_acelow]: 
-			for idx,i in enumerate(range(len(ranks)-4)): combinations.append(''.join(ranks[idx:(5+idx)]))
-		for c in combinations:
-			if (c in ''.join(reversed(RANKS())) or c in ''.join(reversed(RANKS(acehigh=False)))): straight_ranks.append(c)
-		return straight_ranks
-	def GetFlushRanks(cards):
-		suits = SUITS()
-		flush_cards = []
-		combinations = []
-		for suit in suits: flush_cards.append([card for card in cards if card.suit == suit and len([card.rank for card in cards if card.suit == suit])>=5])	
-		for cards in list(filter(None, flush_cards)):
-				for ranks in SortUniqueRanks(cards), SortUniqueRanks(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False))):
-					for idx,i in enumerate(range(len(ranks)-4)): combinations.append(''.join(ranks[idx:(5+idx)]))
-		return combinations
-	def HighCard(cards):
-		# Return 5 highest cards
-		return SortCardsByRank(cards)[:5]
-	def Pair(cards):
-		return OneRankHand(cards, 2)
-	def TwoPair(cards):
-		# Kickers are the best cards left between the hand and the total 5
-		kickers = 1
-		pairs = []
-		for rank in SortUniqueRanks(cards):
-			if sum(card.rank == rank for card in cards) == 2: pairs.append([card for card in cards if card.rank == rank])
-		if len(pairs) >=2:
-			for card in [card for pair in pairs[:2] for card in pair]: cards.remove(card)
-			kicker = SortCardsByRank(cards)[0]
-			return [card for pair in pairs[:2] for card in pair] + [kicker]
-		return []
-	def Set(cards):
-		return OneRankHand(cards, 3)
-	def Straight(cards):
-		straight_ranks = GetStraightRanks(cards)
-		if len(cards) < 5 or len(straight_ranks) == 0: return []
-		cards = SortCardsByRank(cards)
-		# We want reverse order for a wheel
-		if straight_ranks[0] == '5432A': cards = SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False)))
-		return [ card for card in cards if card.rank in straight_ranks[0] ]
-	def Flush(cards):
-		flush_ranks = GetFlushRanks(cards)
-		if len(cards) < 5 or len(flush_ranks) == 0: return []
-		cards = SortCardsByRank(cards)
-		return [ card for card in cards if card.rank in flush_ranks[0] ]
-	def FullHouse(cards):
-		set_ranks = GetRankHandRanks(cards, 3)
-		pair_ranks = GetRankHandRanks(cards, 2)
-		if len(cards) < 5 or len(set_ranks) == 0 or len(pair_ranks) == 0: return []
-		return [ card for card in cards if card.rank in set_ranks[0] ] + [ card for card in cards if card.rank in pair_ranks[0] ]
-		# we want to order the full house with set first..
-	def Quads(cards):
-		return OneRankHand(cards, 4)
-	def StraightFlush(cards):
-		straight_ranks = GetStraightRanks(cards)
-		flush_ranks = GetFlushRanks(cards)
-		if len(cards) < 5 or len(flush_ranks) == 0 or len(straight_ranks) == 0: return []
-		straightflush_ranks = [ranks for ranks in flush_ranks if ranks in straight_ranks]
-		cards = SortCardsByRank(cards)
-		if straightflush_ranks[0] == '5432A': cards = SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False)))
-		return [ card for card in cards if card.rank in straightflush_ranks[0] ]
-	def RoyalFlush(cards):
-		straightflush = StraightFlush(cards)
-		if len(cards) < 5 or len(straightflush) == 0: return []
-		if straightflush[0].rank == "A":
-			return straightflush
-		return []
-	# Exec all hand functions, the first strongest we find is our hand
-	for hand in reversed(HANDS()):
-		hand_cards = locals()[hand](cards)
-		if any(hand_cards): return (hand, hand_cards)
+from modules.hand_funcs import *
 
 def PrintCards(cards):
-	try: return [(card.rank, card.suit) for card in cards]
+	try: return [card.rank + card.suit for card in cards]
 	except: return False
 
 def PopulatePositions(players):
@@ -163,7 +63,7 @@ def PickRandomCards(number):
 	cards = np.random.choice(hand.deck.contents, number, replace=False)
 	for card in cards:
 		hand.deck.RemoveCard(card)
-	return cards
+	return SortCardsByRank(list(cards))
 
 def Action(options):
 	while True:
@@ -178,14 +78,6 @@ def Action(options):
 				continue
 		except:
 			continue
-
-def RANKS(acehigh=True): 
-	RANKS = deque([ "2", "3", "4", "5", "6", "7","8", "9", "T", "J", "Q", "K", "A" ])
-	if acehigh: return list(RANKS)
-	RANKS.rotate(1)
-	return list(RANKS)
-def SUITS(): return [ "Clubs", "Diamonds", "Hearts", "Spades" ]
-def HANDS(): return [ "HighCard", "Pair", "TwoPair", "Set", "Straight", "Flush", "FullHouse", "Quads", "StraightFlush", "RoyalFlush" ]
 
 class Card:
 	def __init__(self, rank, suit):
@@ -204,12 +96,12 @@ class Deck:
 		self.contents.remove(card)
 
 class Player(object):
-	def __init__(self, name):
+	def __init__(self, name, stack):
 		self.index = None
 		self.flop_index = None
 		self.position = None
 		self.name = name
-		self.stack = 1500
+		self.stack = stack
 		self.curbet = 0
 		self._cards = None
 		self.hand = None
@@ -238,6 +130,9 @@ class Player(object):
 		else:
 			options.append("Check")
 			options.append("Bet")
+		options.append("AllIn")
+		if any([p for p in hand.players if isinstance(p.curbet, int) and p.curbet >= self.stack]):
+			options.remove("Raise")
 		return options
 	def BetPrompt(self, minbet):
 		while True:
@@ -271,6 +166,8 @@ class Player(object):
 		return self.Bet(minbet=minbet)
 	def Check(self, minbet):
 		return self.Bet(minbet=minbet, betsize=0)
+	def AllIn(self, minbet):
+		return self.Bet(minbet=minbet, betsize=self.stack)
 	def Call(self, minbet):
 		minbet = minbet - self.curbet
 		print("Call", minbet)
@@ -282,15 +179,18 @@ class Player(object):
 class Hand(object):
 	def __init__(self):
 		self.over = False
+		self.betting = True
 		self.deck = Deck()
 		self.pot = 0
 		self.street = 1
 		self.small_blind = 10
 		self._comcards = []
 		self.folded_players = []
-		self.players = deque([ Player(i) for i in players ])
+		self.players = deque([ Player(name, stack) for (name, stack) in players ])
 		# If it's the first round, we need to randompy choose a dealer
 		self.first_dealer_idx = list(self.players).index(np.random.choice(self.players, 1, replace=False)[0])
+		# Static dealer for testing
+		self.first_dealer_idx = 1
 		self.players[self.first_dealer_idx].isdealer = True
 		# Now let's rotate the players so that the dealer is in position -3
 		rotate = ((len(self.players)-self.first_dealer_idx)-3)
@@ -327,16 +227,25 @@ class Hand(object):
 		# and set the minimum bet to the big blind again
 		self.minbet = self.small_blind*2
 		self.curbet = self.minbet
-	def IsItOver(self):
+	def Over(self):
 		if self.over:
 			winning_player = next(filter(lambda p: p.curbet != 'Fold', self.players))
 			winning_player.stack = winning_player.stack + self.pot
 			self.pot = 0
 			return True
+	def BettingOver(self):
+		if len([p for p in self.players if isinstance(p.curbet, int) and p.stack !=0 ]) == 0: 
+			self.betting = False
+			return True
 	def BettingRound(self):
 		# Start betting round
 		while True:
 			for idx, p in enumerate(self.players):
+				print("BETTING OPEN?", self.betting)
+				# Check if betting is over
+				if self.BettingOver():
+					end = True
+					break
 				# End if all players but this one have folded
 				if len([p for p in self.players if isinstance(p.curbet, int)]) == 1:
 					end = True
@@ -346,9 +255,11 @@ class Hand(object):
 				if p.curbet == 'Fold':
 					continue
 				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", p.position)
-				print("BEFORE", [p.curbet for p in self.players])
+				print("BEFORE", "BETS", [p.curbet for p in self.players], "STACKS", [p.stack for p in self.players])
 				print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand[0], PrintCards(p.hand[1]))
-				print("BOARD", [[card.rank, card.suit] for card in self.comcards])
+				print("BOARD", PrintCards(self.comcards))
+				print("YOUR STACK:", p.stack)
+				print("TO CALL", ((self.minbet - p.curbet) if (self.minbet - p.curbet) < p.stack else p.stack))
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				if not p.curbet == "Fold": self.curbet = bet
 				#curbet = p.Bet(minbet=self.minbet)
@@ -360,6 +271,10 @@ class Hand(object):
 					end = True if (all(p.curbet == self.curbet for p in [p for p in self.players if isinstance(p.curbet, int)]) and self.curbet !=0 ) or (all(p.curbet == 0 for p in [p for p in self.players if isinstance(p.curbet, int)]) and idx == len(self.players)-1) else False
 				if end: break
 			if end: break
+	def ShowDown(self):
+		print("SHOWDOWN")
+		for p in self.players: print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand[0], PrintCards(p.hand[1]))
+		print("BOARD", [[card.rank, card.suit] for card in self.comcards])
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player
@@ -369,29 +284,30 @@ class Hand(object):
 		self.players[-1].Bet(betsize=self.small_blind*2)
 		# Start betting round
 		self.BettingRound()
-		return True if self.IsItOver() else False
+		return True if self.Over() else False
 	def Flop(self):
-		if self.IsItOver(): return False
+		if self.Over(): return False
 		self.NewStreet()
 		# Sort remaining players based on their flop_index
 		self.players.sort(key=lambda p: p.flop_index)
 		self.DealOntable(3)
-		self.BettingRound()
-		return True if self.IsItOver() else False
+		if self.betting: self.BettingRound()
+		return True if self.Over() else False
 	def Turn(self):
-		if self.IsItOver(): return False
+		if self.Over(): return False
 		self.NewStreet()
 		self.DealOntable(1)
-		self.BettingRound()
-		return True if self.IsItOver() else False
+		if self.betting: self.BettingRound()
+		return True if self.Over() else False
 	def River(self):
-		if self.IsItOver(): return False
+		if self.Over(): return False
 		self.NewStreet()
 		self.DealOntable(1)
-		self.BettingRound()
+		if self.betting: self.BettingRound()
+		self.ShowDown()
 	
 
-players =  ['A', 'B', 'C', 'D']
+players =  [('A', 2000), ('B', 1000), ('C', 7500), ('D', 400)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 

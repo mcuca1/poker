@@ -121,7 +121,7 @@ class Card:
 		return self.rank == other.rank and self.suit == other.suit
 
 player_cards = [Card("K", "Clubs"), Card("K", "Diamonds")]
-community_cards = [Card("J", "Spades"), Card("J", "Hearts"), Card("J", "Diamonds"),  Card("T", "Clubs"), Card("J", "Clubs")]
+community_cards = [Card("J", "Spade    s"), Card("J", "Hearts"), Card("J", "Diamonds"),  Card("T", "Clubs"), Card("J", "Clubs")]
 cards = player_cards + community_cards
 
 hand, cards = HandRank(cards)
