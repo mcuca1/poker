@@ -146,28 +146,13 @@ class Player(object):
 			except ValueError:
 				print("Invalid integer. The number must be in the range of %s-%s." % (minbet, self.stack))
 	def Bet(self, minbet=False, betsize=False):
-		# minbet = minbet - self.curbet
-		prevbet = self.curbet
-		print("MINBET", minbet)
+		minbet = minbet - self.curbet
 		if betsize is False: betsize = self.BetPrompt(minbet)
 		self.curbet = self.curbet + betsize
 		self.stack = self.stack - betsize
-		# SITE POTS; let's handle case 1. Someone is all in and we are raising more
-		current_pot = hand.pots[len(MyPots(self, hand.pots))-1]
-		#last_allin_p = next(iter([p for p in AllinPlayers(hand.players) if p != self and (hand.players.index(p) == (hand.players.index(self)-1))]), None)
-		last_allin_p = next(iter([p for p in AllinPlayers(hand.players) if p != self]), None)
-		allin_value = last_allin_p.curbet if last_allin_p else None
-
-		if allin_value and betsize > allin_value:
-			print("ALLIN", last_allin_p.name, betsize, allin_value, current_pot.players_stakes.keys())
-			if last_allin_p.name in current_pot.players_stakes.keys(): hand.pots.append(Pot())
-			current_pot.Add(allin_value-prevbet, self.name)
-			hand.pots[len(MyPots(self, hand.pots))].Add(betsize-allin_value+prevbet, self.name)
-		else:
-			print("ALLIN", betsize, allin_value)
-			current_pot.Add((betsize-prevbet), self.name)
-
-		hand.minbet = self.curbet
+		main_pot = hand.pots[0]
+		main_pot.Add((betsize), self.name)
+		#hand.minbet = self.curbet
 		return self.curbet
 	def Raise(self, *args, **kwargs):
 		# Let's get all the bets in the current session, and sort them by size:
@@ -248,6 +233,7 @@ class Hand(object):
 		self.comcards = [*self.comcards, *PickRandomCards(number)]
 	def NewStreet(self):
 		self.street +=1
+		print("\n\n\n\n")
 		print("STREET:", MapStreet(self.street))
 		# Move foldeed players
 		self.folded_players = self.folded_players + [p for p in self.players if p.curbet == 'Fold']
@@ -264,27 +250,53 @@ class Hand(object):
 			winning_player.stack = winning_player.stack + self.pot
 			self.pot = 0
 			return True
-	def BettingOver(self):
-		if len([p for p in self.players if isinstance(p.curbet, int) and p.stack !=0 ]) == 0: 
+	def PlayerBettingOver(self):
+		# Skip betting turn if player has folded or is all in 
+		return True if p.curbet == 'Fold' or p.stack == 0 else False
+	def StreetBettingOver(self, idx):
+		if self.street == 2: # PreFlop
+			if (
+				# All players have the same bet, hence the last has called closing the round
+				all(p.curbet == self.curbet for p in list(set(self.players) - set(FoldedPlayers(self.players)) - set(AllinPlayers(self.players)))) and
+				# We are not in the big blind on the next round. Preflop the big blind will have the same bet as everyone else, but still gets to decide what to do
+				# This is the only instance when this happens in a hand
+				not (idx == len(self.players)-2 and 
+					self.curbet == self.small_blind*2) 
+				): return True
+		else: # Postflop
+			if (
+				# All players have the same bet, hence the last has called closing the round and it's not the start of a betting round when the current bet is zero 
+				(all(p.curbet == self.curbet for p in list(set(self.players) - set(FoldedPlayers(self.players)) - set(AllinPlayers(self.players)))) and self.curbet !=0 ) or
+				# All the players left in the hand have checked, the round is over
+				(all(p.curbet == 0 for p in [p for p in self.players if isinstance(p.curbet, int)]) and 
+					idx == len(self.players)-1)
+				# 
+				): return True
+		return False
+	def HandBettingOver(self):
+		active_players = list(set(self.players) - set(FoldedPlayers(self.players)) - set(AllinPlayers(self.players)))
+		if len(active_players) > 1:
+			self.betting = True
+		elif len(active_players) == 1:
+			self.betting = False if active_players[0].curbet >= self.curbet else True
+		else:
 			self.betting = False
-			return True
+		return not self.betting
+	def SkipBettingTurn(self, player):
+		# Skip betting turn if player has folded or is all in 
+		return True if (player.curbet == 'Fold' or player.stack == 0) else False
 	def BettingRound(self):
 		# Start betting round
 		end = False
 		while True:
 			for idx, p in enumerate(self.players):
-				print("BETTING OPEN?", self.betting)
-				# Check if betting is over
-				if self.BettingOver():
+				if self.HandBettingOver(): 
 					end = True
 					break
-				# End if all players but this one have folded
-				if len([p for p in self.players if isinstance(p.curbet, int)]) == 1:
-					end = True
-					self.over = True
-					break
-				# Skip if has folded
-				if p.curbet == 'Fold':
+				if self.SkipBettingTurn(p):
+					if self.StreetBettingOver(idx):
+						end = True
+						break
 					continue
 				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", "("+ p.position + ")")
 				print("BEFORE", "BETS", [p.curbet for p in self.players], "STACKS", [p.stack for p in self.players])
@@ -295,37 +307,25 @@ class Hand(object):
 				# For the love or god do not use idx here
 				for potidx, pot in enumerate(self.pots):
 					print("POT_%s:" % potidx, pot.value, dict(pot.players_stakes))
-				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
-				if not p.curbet == "Fold": self.curbet = bet
-				#curbet = p.Bet(minbet=self.minbet)
-				print([(p.curbet, p.position) for p in self.players])
-				print(idx, len(self.players), self.curbet)
 				
-				if self.street == 2: # PreFlop
-					if (
-						# All players have the same bet, hence the last has called closing the round
-						all(p.curbet == self.curbet for p in list(set(self.players) - set(FoldedPlayers(self.players)) - set(AllinPlayers(self.players)))) and
-						# We are not in the big blind on the next round. Preflop the big blind will have the same bet as everyone else, but still gets to decide what to do
-						# This is the only instance when this happens in a hand
-						not (idx == len(self.players)-2 and 
-							self.curbet == self.small_blind*2) 
-						): end = True
+				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
+				
+				if not p.curbet == "Fold": 
+					self.curbet = bet
+					self.minbet = bet if bet > self.minbet else self.minbet
 
-				else: # Postflop
-					if (
-						# All players have the same bet, hence the last has called closing the round and it's not the start of a betting round when the current bet is zero 
-						(all(p.curbet == self.curbet for p in list(set(self.players) - set(FoldedPlayers(self.players)) - set(AllinPlayers(self.players)))) and self.curbet !=0 ) or
-						# All the players left in the hand have checked, the round is over
-						(all(p.curbet == 0 for p in [p for p in self.players if isinstance(p.curbet, int)]) and 
-							idx == len(self.players)-1)
-						# 
-						): end = True
-				if end: break
+				print([(p.curbet, p.name) for p in self.players])
+				print(idx, len(self.players), self.curbet)
+				if self.StreetBettingOver(idx):
+					self.HandBettingOver()
+					end = True
+					break
+				print("\n\n\n\n")
 			if end: break
 	def ShowDown(self):
 		print("SHOWDOWN")
 		for p in self.players: print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand[0], PrintCards(p.hand[1]))
-		print("BOARD", [[card.rank, card.suit] for card in self.comcards])
+		print("BOARD", PrintCards(self.comcards))
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player
@@ -358,7 +358,7 @@ class Hand(object):
 		self.ShowDown()
 	
 
-players =  [('Player1', 500), ('Player2', 1000), ('Player3', 2000), ('Player4', 3000)]
+players =  [('Player1', 10000), ('Player2', 2000), ('Player3', 500), ('Player4', 100)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 
