@@ -7,7 +7,9 @@ from random import shuffle
 import numpy as np
 from collections import deque
 import inspect
+from collections import defaultdict
 from modules.hand_funcs import *
+from modules.player_funcs import *
 
 def PrintCards(cards):
 	try: return [card.rank + card.suit for card in cards]
@@ -88,7 +90,6 @@ class Card:
 
 class Deck:
 	def __init__(self):
-		self.contents = []
 		self.contents = [ Card( rank, suit ) for rank in RANKS() for suit in SUITS() ]
 	def Shuffle(self):
 		random.shuffle(self.contents)
@@ -145,11 +146,27 @@ class Player(object):
 			except ValueError:
 				print("Invalid integer. The number must be in the range of %s-%s." % (minbet, self.stack))
 	def Bet(self, minbet=False, betsize=False):
-		minbet = minbet - self.curbet
+		# minbet = minbet - self.curbet
+		prevbet = self.curbet
+		print("MINBET", minbet)
 		if betsize is False: betsize = self.BetPrompt(minbet)
 		self.curbet = self.curbet + betsize
 		self.stack = self.stack - betsize
-		hand.pot = hand.pot + betsize
+		# SITE POTS; let's handle case 1. Someone is all in and we are raising more
+		current_pot = hand.pots[len(MyPots(self, hand.pots))-1]
+		#last_allin_p = next(iter([p for p in AllinPlayers(hand.players) if p != self and (hand.players.index(p) == (hand.players.index(self)-1))]), None)
+		last_allin_p = next(iter([p for p in AllinPlayers(hand.players) if p != self]), None)
+		allin_value = last_allin_p.curbet if last_allin_p else None
+
+		if allin_value and betsize > allin_value:
+			print("ALLIN", last_allin_p.name, betsize, allin_value, current_pot.players_stakes.keys())
+			if last_allin_p.name in current_pot.players_stakes.keys(): hand.pots.append(Pot())
+			current_pot.Add(allin_value-prevbet, self.name)
+			hand.pots[len(MyPots(self, hand.pots))].Add(betsize-allin_value+prevbet, self.name)
+		else:
+			print("ALLIN", betsize, allin_value)
+			current_pot.Add((betsize-prevbet), self.name)
+
 		hand.minbet = self.curbet
 		return self.curbet
 	def Raise(self, *args, **kwargs):
@@ -177,12 +194,25 @@ class Player(object):
 		#hand.players.remove(self)
 		self.curbet = "Fold"
 
+
+class Pot(object):
+	def __init__(self):
+		self.value = 0
+		self.players_stakes = defaultdict(int)
+		self.closed = False
+	def Add(self, value, player):
+		self.value = self.value + value
+		self.players_stakes[player] += value 
+		#self.players.append(player) if player not in self.players else self.players
+	def Close(self):
+		self.closed = True
+
 class Hand(object):
 	def __init__(self):
 		self.over = False
 		self.betting = True
 		self.deck = Deck()
-		self.pot = 0
+		self.pots = [Pot()]
 		self.street = 1
 		self.small_blind = 10
 		self._comcards = []
@@ -240,6 +270,7 @@ class Hand(object):
 			return True
 	def BettingRound(self):
 		# Start betting round
+		end = False
 		while True:
 			for idx, p in enumerate(self.players):
 				print("BETTING OPEN?", self.betting)
@@ -255,22 +286,40 @@ class Hand(object):
 				# Skip if has folded
 				if p.curbet == 'Fold':
 					continue
-				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", p.position)
+				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", "("+ p.position + ")")
 				print("BEFORE", "BETS", [p.curbet for p in self.players], "STACKS", [p.stack for p in self.players])
 				print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand[0], PrintCards(p.hand[1]))
 				print("BOARD", PrintCards(self.comcards))
 				print("YOUR STACK:", p.stack)
 				print("TO CALL", ((self.minbet - p.curbet) if (self.minbet - p.curbet) < p.stack else p.stack))
-				print("POTS:", self.pot)
+				# For the love or god do not use idx here
+				for potidx, pot in enumerate(self.pots):
+					print("POT_%s:" % potidx, pot.value, dict(pot.players_stakes))
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				if not p.curbet == "Fold": self.curbet = bet
 				#curbet = p.Bet(minbet=self.minbet)
 				print([(p.curbet, p.position) for p in self.players])
 				print(idx, len(self.players), self.curbet)
+				
 				if self.street == 2: # PreFlop
-					end = True if all(p.curbet == self.curbet for p in [p for p in self.players if isinstance(p.curbet, int)]) and not (idx == len(self.players)-2 and self.curbet == self.small_blind*2) else False
-				else:
-					end = True if (all(p.curbet == self.curbet for p in [p for p in self.players if isinstance(p.curbet, int)]) and self.curbet !=0 ) or (all(p.curbet == 0 for p in [p for p in self.players if isinstance(p.curbet, int)]) and idx == len(self.players)-1) else False
+					if (
+						# All players have the same bet, hence the last has called closing the round
+						all(p.curbet == self.curbet for p in list(set(self.players) - set(FoldedPlayers(self.players)) - set(AllinPlayers(self.players)))) and
+						# We are not in the big blind on the next round. Preflop the big blind will have the same bet as everyone else, but still gets to decide what to do
+						# This is the only instance when this happens in a hand
+						not (idx == len(self.players)-2 and 
+							self.curbet == self.small_blind*2) 
+						): end = True
+
+				else: # Postflop
+					if (
+						# All players have the same bet, hence the last has called closing the round and it's not the start of a betting round when the current bet is zero 
+						(all(p.curbet == self.curbet for p in list(set(self.players) - set(FoldedPlayers(self.players)) - set(AllinPlayers(self.players)))) and self.curbet !=0 ) or
+						# All the players left in the hand have checked, the round is over
+						(all(p.curbet == 0 for p in [p for p in self.players if isinstance(p.curbet, int)]) and 
+							idx == len(self.players)-1)
+						# 
+						): end = True
 				if end: break
 			if end: break
 	def ShowDown(self):
@@ -309,7 +358,7 @@ class Hand(object):
 		self.ShowDown()
 	
 
-players =  [('A', 2000), ('B', 1000), ('C', 7500), ('D', 400)]
+players =  [('Player1', 500), ('Player2', 1000), ('Player3', 2000), ('Player4', 3000)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 
@@ -320,4 +369,5 @@ for street in streets:
 	if getattr(hand, street)():
 		for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
 		for p in hand.folded_players: print(p.name, p.stack, p.curbet, p.position)
-	print("POT", hand.pot)
+	for potidx, pot in enumerate(hand.pots):
+		print("POT_%s:" % potidx, pot.value, dict(pot.players_stakes))
