@@ -340,7 +340,7 @@ class Hand(object):
 				PrintPlayers(self)
 				PrintPots(self)
 				print("\n%s (You) %s\n" % (p.name, p.position))
-				print("Your Cards:", PrintCards(p.cards), "Your Hand:", p.hand[0], PrintCards(p.hand[1]))
+				print("Your Cards:", PrintCards(p.cards), "Your Hand:", p.hand['hand'], PrintCards(p.hand['cards']), "Strength:", p.hand['strength'])
 				if hand.comcards: print("Board Cards:", PrintCards(hand.comcards))
 				print("\n")
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
@@ -355,7 +355,7 @@ class Hand(object):
 			if end: break
 	def ShowDown(self):
 		print("SHOWDOWN")
-		for p in self.players: print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand[0], PrintCards(p.hand[1]))
+		for p in self.players: print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand['hand'], PrintCards(p.hand['cards']), p.hand['strength'])
 		print("BOARD", PrintCards(self.comcards))
 	def PreFlop(self):
 		self.NewStreet()
@@ -389,7 +389,7 @@ class Hand(object):
 		self.ShowDown()
 	
 
-players =  [('Player6', 16000), ('Player1', 16050), ('Player2', 15000), ('Player3', 2500), ('Player4', 4000), ('Player5', 8000)]
+players =  [('Player0', 500), ('Player1', 750), ('Player2', 800), ('Player3', 350)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 

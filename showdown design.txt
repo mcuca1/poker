@@ -5,4 +5,4 @@ if they don't find the smaller stake and find if the won. if they didn't win, re
 repeat..
 
 
-stacks should be value class
+stacks should be value class  

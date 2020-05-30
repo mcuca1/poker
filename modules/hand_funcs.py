@@ -109,4 +109,12 @@ def RoyalFlush(cards):
 def HandRank(cards):
 	for hand in reversed(HANDS()):
 		hand_cards = globals()[hand](cards)
-		if any(hand_cards): return (hand, hand_cards)
+		if any(hand_cards):
+			# It's interesting thinking on how to define the strenght of the hole cards..
+			# It's the rank strength but also if suited and the straight possibilities, etc..
+			# Obv could google the math but can do this, the sweet spot for straight should be JT or T9
+			# Anyway, for now let's rate it using the rank alone. MAX is 24 on 2 cards, so we divide by 24.1 to get 0.99 as we want the rank strength to be the decimal part.
+			# And on 5 cards, max is AAAAK which is 59. So we divide by 59.1
+			rank_divisor = 24.1 if len(hand_cards) == 2 else 59.1
+			strength = HANDS().index(hand) + round(sum([RANKS().index(rank) for rank in [card.rank for card in hand_cards]])/rank_divisor,2)
+			return {'hand': hand, 'cards': hand_cards, 'strength': strength}
