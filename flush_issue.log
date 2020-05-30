@@ -1,0 +1,11 @@
+STREET: River
+SHOWDOWN
+Player3 CARDS ['5♦', '3♦'] HAND Flush ['K♠', 'Q♠', '8♠', '3♦', '3♠', '2♠']
+Player4 CARDS ['A♦', '9♠'] HAND Flush ['K♠', 'Q♠', '9♠', '8♠', '3♠']
+Player1 CARDS ['8♣', '4♥'] HAND Flush ['K♠', 'Q♠', '8♣', '8♠', '3♠', '2♠']
+Player2 CARDS ['3♥', '2♣'] HAND Flush ['K♠', 'Q♠', '8♠', '3♥', '3♠', '2♣', '2♠']
+BOARD ['K♠', 'Q♠', '2♠', '8♠', '3♠']
+POT_0: 16000 {'Player3': 4000, 'Player4': 4000, 'Player1': 4000, 'Player2': 4000} MAX:
+
+
+detection seems correct but not hands..
