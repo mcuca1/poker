@@ -195,41 +195,46 @@ class Bet(object):
 
 class Pot(object):
 	def __init__(self, MAX=float("inf")):
-		self.value = 0
 		self.players_stakes = defaultdict(int)
 		self.MAX = MAX
+	@property
+	def value(self):
+		return sum(self.players_stakes.values())
 	def SetMax(self, MAX):
 		if not self.MAX == float("inf"):
-			try:
-				next_pot = hand.pots[hand.pots.index(self)+1]
-			except IndexError:
-				hand.pots.append(Pot())
-				next_pot = hand.pots[hand.pots.index(self)+1]
-			print("!!!!!!!!!!!!!!!!!", MAX, self.MAX)
 			if MAX >= self.MAX:
-				next_pot.SetMax(MAX-self.MAX)
-			else:
-				print("!!!!!!!!!!! Setting to", (MAX-self.MAX))
-				hand.pots.insert(hand.pots.index(self), Pot(MAX=MAX))
-		else:
-			self.MAX = MAX
-	def Add(self, value, player):
-		if value <= self.MAX:
-			self.value = self.value + value
-			self.players_stakes[player] += value
-		else:
-			bet = Bet(value)
-			player_max = self.MAX - self.players_stakes[player]
-			pot_max = GetValue(bet, player_max)
-			print("pot max", pot_max, "player_max", player_max, "bet value", bet.value)
-			self.value = self.value + pot_max
-			self.players_stakes[player] += pot_max	
-			if bet.value > 0:
+				print("!!!!!!!!!!!!!!!!! Setting next POT MAX", (MAX-self.MAX))
 				try:
 					next_pot = hand.pots[hand.pots.index(self)+1]
 				except IndexError:
 					hand.pots.append(Pot())
 					next_pot = hand.pots[hand.pots.index(self)+1]
+				next_pot.SetMax(MAX-self.MAX)
+			else:
+				print("!!!!!!!!!!! Setting to", (MAX))
+				hand.pots.insert(hand.pots.index(self), Pot(MAX=MAX))
+
+		else:
+			self.MAX = MAX
+	def Add(self, value, player):
+		if value <= self.MAX:
+			self.players_stakes[player] += value
+		else:
+			bet = Bet(value)
+			player_max = self.MAX - self.players_stakes[player]
+			pot_max = GetValue(bet, player_max)
+			self.players_stakes[player] += pot_max	
+			if bet.value > 0:
+				next_pot = hand.pots[hand.pots.index(self)+1]
+				# print("bet.value left is", bet.value)
+				# try:
+				# 	next_pot = hand.pots[hand.pots.index(self)+1]
+				# except IndexError:
+				# 	print("######################## NEW POT", "pot max", pot_max, "player_max", player_max, "bet value", bet.value)
+				# 	hand.pots.append(Pot())
+				# 	next_pot = hand.pots[hand.pots.index(self)+1]
+
+
 				next_pot.Add(bet.value, player)
 ### Find a way to update pot total value from player stakes
 ### store player stakes as Value objects (change class)
@@ -401,7 +406,7 @@ class Hand(object):
 		self.ShowDown()
 	
 
-players =  [('Player1', 4000), ('Player2', 8000), ('Player3', 16000), ('Player4', 6000)]
+players =  [('Player6', 16000), ('Player1', 24000), ('Player2', 17000), ('Player3', 2500), ('Player4', 4000), ('Player5', 8000)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 
