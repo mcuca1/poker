@@ -1,7 +1,7 @@
 from modules.hand_funcs import *
 from modules.player_funcs import *
 
-a = ['A♠', 'A♦']
+a = ['K♥', 'K♠', '8♣', '8♠', 'A♣']
 #b = ['5♠', 'Q♠', '2♠', '4♠', '3♠']
 
 class Card:
@@ -22,4 +22,8 @@ class Card:
 
 hand = HandRank([Card(x[0],x[1]) for x in a])
 
-print(hand['hand'], PrintCards(hand['cards']), [RANKS().index(rank) for rank in [card.rank for card in hand['cards']]])
+print(HANDS().index(hand['hand']))
+
+st = round(2 + sum([RANKS().index(rank) for rank in [card.rank for card in hand['cards']]])/59.1,2)
+
+print(hand['hand'], PrintCards(hand['cards']), st)

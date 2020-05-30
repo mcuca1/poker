@@ -116,5 +116,5 @@ def HandRank(cards):
 			# Anyway, for now let's rate it using the rank alone. MAX is 24 on 2 cards, so we divide by 24.1 to get 0.99 as we want the rank strength to be the decimal part.
 			# And on 5 cards, max is AAAAK which is 59. So we divide by 59.1
 			rank_divisor = 24.1 if len(hand_cards) == 2 else 59.1
-			strength = HANDS().index(hand) + round(sum([RANKS().index(rank) for rank in [card.rank for card in hand_cards]])/rank_divisor,2)
+			strength = round(HANDS().index(hand) + sum([RANKS().index(rank) for rank in [card.rank for card in hand_cards]])/rank_divisor,2)
 			return {'hand': hand, 'cards': hand_cards, 'strength': strength}

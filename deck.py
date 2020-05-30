@@ -354,9 +354,12 @@ class Hand(object):
 				print("\n\n\n\n")
 			if end: break
 	def ShowDown(self):
-		print("SHOWDOWN")
+		print("SHOWDOWN\n\n")
 		for p in self.players: print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand['hand'], PrintCards(p.hand['cards']), p.hand['strength'])
 		print("BOARD", PrintCards(self.comcards))
+		# Let's find if there are any ties
+		print(Counter([hand['strength'] for hand in [p.hand for p in self.players]]))
+
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player
