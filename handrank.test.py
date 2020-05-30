@@ -1,8 +1,8 @@
 from modules.hand_funcs import *
 from modules.player_funcs import *
 
-a = ['5♦', '3♦']
-b = ['K♠', 'Q♠', '2♠', '8♠', '3♠']
+a = ['A♠', '3♦']
+b = ['5♠', 'Q♠', '2♠', '4♠', '3♠']
 
 class Card:
 	def __init__(self, rank, suit):
@@ -22,4 +22,4 @@ class Card:
 
 hand = HandRank([Card(x[0],x[1]) for x in a] + [Card(x[0],x[1]) for x in b])
 
-print(hand[0], PrintCards(hand[0]))
+print(hand[0], PrintCards(hand[1]))

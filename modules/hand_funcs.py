@@ -1,4 +1,5 @@
 from collections import deque
+from collections import Counter
 
 def RANKS(acehigh=True): 
 	RANKS = deque([ "2", "3", "4", "5", "6", "7","8", "9", "T", "J", "Q", "K", "A" ])
@@ -41,6 +42,9 @@ def GetStraightRanks(cards):
 	for c in combinations:
 		if (c in ''.join(reversed(RANKS())) or c in ''.join(reversed(RANKS(acehigh=False)))): straight_ranks.append(c)
 	return straight_ranks
+def GetFlushSuit(cards):
+	suits_counts = Counter([card.suit for card in cards])
+	return next(iter([suit for (suit,count) in suits_counts.items() if count >= 5]), None)
 def GetFlushRanks(cards):
 	suits = SUITS()
 	flush_cards = []
@@ -79,7 +83,7 @@ def Flush(cards):
 	flush_ranks = GetFlushRanks(cards)
 	if len(cards) < 5 or len(flush_ranks) == 0: return []
 	cards = SortCardsByRank(cards)
-	return [ card for card in cards if card.rank in flush_ranks[0] ]
+	return [ card for card in cards if card.rank in flush_ranks[0] and card.suit == GetFlushSuit(cards) ]
 def FullHouse(cards):
 	set_ranks = GetRankHandRanks(cards, 3)
 	pair_ranks = GetRankHandRanks(cards, 2)
@@ -95,7 +99,7 @@ def StraightFlush(cards):
 	straightflush_ranks = [ranks for ranks in flush_ranks if ranks in straight_ranks]
 	cards = SortCardsByRank(cards)
 	if straightflush_ranks[0] == '5432A': cards = SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False)))
-	return [ card for card in cards if card.rank in straightflush_ranks[0] ]
+	return [ card for card in cards if card.rank in straightflush_ranks[0] and card.suit == GetFlushSuit(cards) ]
 def RoyalFlush(cards):
 	straightflush = StraightFlush(cards)
 	if len(cards) < 5 or len(straightflush) == 0: return []
