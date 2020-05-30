@@ -340,6 +340,9 @@ class Hand(object):
 				PrintPlayers(self)
 				PrintPots(self)
 				print("\n%s (You) %s\n" % (p.name, p.position))
+				print("Your Cards:", PrintCards(p.cards), "Your Hand:", p.hand[0], PrintCards(p.hand[1]))
+				if hand.comcards: print("Board Cards:", PrintCards(hand.comcards))
+				print("\n")
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				if not p.curbet == "Fold": 
 					self.curbet = bet
