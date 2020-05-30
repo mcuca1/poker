@@ -1,3 +1,5 @@
+from pprint import pprint
+
 def FoldedPlayers(players):
 	return [p for p in players if p.curbet == 'Fold']
 
@@ -34,3 +36,11 @@ def CleanPotStakes(pot):
 def PrintCards(cards):
 	try: return [card.rank + card.suit for card in cards]
 	except: return False
+
+def PrintPlayers(hand):
+	pprint([(p.name, "$"+str(p.stack), "$"+str(p.curbet), p.position) for p in hand.players ])
+	print("\n")
+
+def PrintPots(hand):
+	for pot in hand.pots:
+		print("POT N"+str(hand.pots.index(pot)+1)+" =", "$"+str(pot.value))

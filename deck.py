@@ -204,7 +204,6 @@ class Pot(object):
 	def SetMax(self, MAX):
 		if not self.MAX == float("inf"):
 			if MAX >= self.MAX:
-				print("!!!!!!!!!!!!!!!!! Setting next POT MAX", (MAX-self.MAX))
 				try:
 					next_pot = hand.pots[hand.pots.index(self)+1]
 				except IndexError:
@@ -212,7 +211,6 @@ class Pot(object):
 					next_pot = hand.pots[hand.pots.index(self)+1]
 				next_pot.SetMax(MAX-self.MAX)
 			else:
-				print("!!!!!!!!!!! Setting to", (MAX))
 				new_pot_index = hand.pots.index(self)
 				hand.pots.insert(new_pot_index, Pot(MAX=MAX))
 				print(GetPotStakes(hand.pots[new_pot_index+1]))
@@ -276,8 +274,6 @@ class Hand(object):
 		self.comcards = [*self.comcards, *PickRandomCards(number)]
 	def NewStreet(self):
 		self.street +=1
-		print("\n\n\n\n")
-		print("STREET:", MapStreet(self.street))
 		# Move foldeed players
 		self.folded_players = self.folded_players + [p for p in self.players if p.curbet == 'Fold']
 		# Remove folded players
@@ -341,24 +337,13 @@ class Hand(object):
 						end = True
 						break
 					continue
-				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", "("+ p.position + ")", [self.street])
-				print("BEFORE", "BETS", [p.curbet for p in self.players], "STACKS", [p.stack for p in self.players])
-				print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand[0], PrintCards(p.hand[1]))
-				print("BOARD", PrintCards(self.comcards))
-				print("YOUR STACK:", p.stack)
-				print("TO CALL", ((self.minbet - p.curbet) if (self.minbet - p.curbet) < p.stack else p.stack))
-				# For the love or god do not use idx here
-				for potidx, pot in enumerate(self.pots):
-					print("POT_%s:" % potidx, pot.value, GetPotStakes(pot), "MAX:", pot.MAX)
-				
+				PrintPlayers(self)
+				PrintPots(self)
+				print("\n%s (You) %s\n" % (p.name, p.position))
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
-				
 				if not p.curbet == "Fold": 
 					self.curbet = bet
 					self.minbet = bet if bet > self.minbet else self.minbet
-
-				print([(p.curbet, p.name) for p in self.players])
-				print(idx, len(self.players), self.curbet)
 				if self.StreetBettingOver(idx):
 					self.HandBettingOver()
 					end = True
@@ -405,12 +390,5 @@ players =  [('Player6', 16000), ('Player1', 16050), ('Player2', 15000), ('Player
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 
-for p in hand.players: print(p.name, p.position, p.index, p.flop_index)
-
 for street in streets:
-	print('##########', street)
-	if getattr(hand, street)():
-		for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
-		for p in hand.folded_players: print(p.name, p.stack, p.curbet, p.position)
-	for potidx, pot in enumerate(hand.pots):
-		print("POT_%s:" % potidx, pot.value, GetPotStakes(pot), "MAX:", pot.MAX)
+	getattr(hand, street)()
