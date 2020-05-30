@@ -1,5 +1,6 @@
 from collections import deque
 from collections import Counter
+from modules.helper_funcs import *
 
 def RANKS(acehigh=True): 
 	RANKS = deque([ "2", "3", "4", "5", "6", "7","8", "9", "T", "J", "Q", "K", "A" ])
@@ -117,6 +118,8 @@ def HandRank(cards):
 			# Obv could google the math but can do this, the sweet spot for straight should be JT or T9
 			# Anyway, for now let's rate it using the rank alone. MAX is 24 on 2 cards, so we divide by 24.1 to get 0.99 as we want the rank strength to be the decimal part.
 			# And on 5 cards, max is AAAAK which is 59. So we divide by 59.1
-			rank_divisor = 24.1 if len(hand_cards) == 2 else 59.1
-			strength = round(HANDS().index(hand) + sum([RANKS().index(rank) for rank in [card.rank for card in hand_cards]])/rank_divisor,2)
+			rank_divisor = 12657 if len(hand_cards) == 2 else 17782186352
+			weighted_rank_indexes = []
+			for idx, card in reverse_enumerate(hand_cards): weighted_rank_indexes.append((RANKS().index(card.rank)+100)**(idx+1))
+			strength = HANDS().index(hand) + sum(weighted_rank_indexes)/rank_divisor
 			return {'hand': hand, 'cards': hand_cards, 'strength': strength}

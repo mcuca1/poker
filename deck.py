@@ -218,7 +218,6 @@ class Pot(object):
 				hand.pots.insert(new_pot_index, Pot(MAX=MAX))
 				print(GetPotStakes(hand.pots[new_pot_index+1]))
 				for player, potstake in hand.pots[new_pot_index+1].players_stakes.items():
-					print(player)
 					hand.pots[new_pot_index].players_stakes[player].value += TakeValue(potstake, MAX)
 				CleanPotStakes(hand.pots[new_pot_index+1])
 				self.MAX = self.MAX - MAX
