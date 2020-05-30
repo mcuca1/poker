@@ -97,6 +97,16 @@ class Deck:
 		self.contents.remove(card)
 
 class Player(object):
+	@property
+	def stack(self):
+		return self._stack
+	@stack.setter
+	def stack(self, stack):
+		self._stack = stack
+		# The stack is updated at every bet, if the stack becomes zero, the player is all in
+		# And we need to lock the pot to his last bet size
+		if self._stack == 0: 
+			hand.pots[0].SetMax(self.curbet)
 	def __init__(self, name, stack):
 		self.index = None
 		self.flop_index = None
@@ -179,18 +189,45 @@ class Player(object):
 		#hand.players.remove(self)
 		self.curbet = "Fold"
 
+class Bet(object):
+	def __init__(self, value):
+		self.value = value
 
 class Pot(object):
 	def __init__(self):
 		self.value = 0
 		self.players_stakes = defaultdict(int)
-		self.closed = False
+		self.MAX = float("inf")
+	def SetMax(self, MAX):
+		if not self.MAX == float("inf"):
+			try:
+				next_pot = hand.pots[hand.pots.index(self)+1]
+			except IndexError:
+				hand.pots.append(Pot())
+				next_pot = hand.pots[hand.pots.index(self)+1]
+				next_pot.MAX = MAX
+			else:
+				self.MAX = MAX
 	def Add(self, value, player):
-		self.value = self.value + value
-		self.players_stakes[player] += value 
-		#self.players.append(player) if player not in self.players else self.players
-	def Close(self):
-		self.closed = True
+		if value <= self.MAX:
+			self.value = self.value + value
+			self.players_stakes[player] += value
+		else:
+			bet = Bet(value)
+			player_max = self.MAX - self.players_stakes[player]
+			pot_max = GetValue(bet, player_max)
+			print("pot max", pot_max, "player_max", player_max, "bet value", bet.value)
+			self.value = self.value + pot_max
+			self.players_stakes[player] += pot_max	
+			if bet.value > 0:
+				try:
+					next_pot = hand.pots[hand.pots.index(self)+1]
+				except IndexError:
+					hand.pots.append(Pot())
+					next_pot = hand.pots[hand.pots.index(self)+1]
+				next_pot.Add(bet.value, player)
+
+
 
 class Hand(object):
 	def __init__(self):
@@ -306,7 +343,7 @@ class Hand(object):
 				print("TO CALL", ((self.minbet - p.curbet) if (self.minbet - p.curbet) < p.stack else p.stack))
 				# For the love or god do not use idx here
 				for potidx, pot in enumerate(self.pots):
-					print("POT_%s:" % potidx, pot.value, dict(pot.players_stakes))
+					print("POT_%s:" % potidx, pot.value, dict(pot.players_stakes), "MAX:", pot.MAX)
 				
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				
@@ -358,7 +395,7 @@ class Hand(object):
 		self.ShowDown()
 	
 
-players =  [('Player1', 10000), ('Player2', 2000), ('Player3', 500), ('Player4', 100)]
+players =  [('Player1', 500), ('Player2', 1000), ('Player3', 2000), ('Player4', 3000)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 

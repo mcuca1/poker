@@ -6,3 +6,7 @@ def AllinPlayers(players):
 
 def MyPots(player, pots):
 	return [pot for pot in pots if player.name in pot.players_stakes.keys()]
+
+def GetValue(bet, value):
+	bet.value = bet.value - value
+	return value
