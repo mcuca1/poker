@@ -231,7 +231,8 @@ class Pot(object):
 					hand.pots.append(Pot())
 					next_pot = hand.pots[hand.pots.index(self)+1]
 				next_pot.Add(bet.value, player)
-
+### Find a way to update pot total value from player stakes
+### store player stakes as Value objects (change class)
 
 
 class Hand(object):
