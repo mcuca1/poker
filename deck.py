@@ -217,7 +217,11 @@ class Pot(object):
 				next_pot.SetMax(MAX-self.MAX)
 			else:
 				print("!!!!!!!!!!! Setting to", (MAX))
-				hand.pots.insert(hand.pots.index(self), Pot(MAX=MAX))
+				new_pot_index = hand.pots.index(self)
+				hand.pots.insert(new_pot_index, Pot(MAX=MAX))
+				for player, potstake in hand.pots[new_pot_index+1].players_stakes.items():
+					hand.pots[new_pot_index].players_stakes[player].value += TakeValue(potstake, MAX)
+				self.MAX = self.MAX - MAX 
 		else:
 			self.MAX = MAX
 	def Add(self, value, player):
@@ -237,8 +241,6 @@ class Pot(object):
 				# 	print("######################## NEW POT", "pot max", pot_max, "player_max", player_max, "bet value", bet.value)
 				# 	hand.pots.append(Pot())
 				# 	next_pot = hand.pots[hand.pots.index(self)+1]
-
-
 				next_pot.Add(bet.value, player)
 ### Find a way to update pot total value from player stakes
 ### store player stakes as Value objects (change class)
