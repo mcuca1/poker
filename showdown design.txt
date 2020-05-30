@@ -6,3 +6,17 @@ repeat..
 
 
 stacks should be value class  
+
+take winning hand, and let's get all players with it. 
+now lets get all the pots where they are staked. let's get all the values out of the pots, split them against the winners and put them in their stacks.
+Their stack HAS to be Value() now..
+
+now, let's see if there is any value left in any pots..if yes:
+
+take next winning hand and repeat process
+remove
+
+be careful that the value to split is only from the pots they are both in!
+
+
+need to fix straight is returning more than 5 cards if there is a pair..

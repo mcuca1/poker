@@ -78,7 +78,9 @@ def Straight(cards):
 	cards = SortCardsByRank(cards)
 	# We want reverse order for a wheel
 	if straight_ranks[0] == '5432A': cards = SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False)))
-	return [ card for card in cards if card.rank in straight_ranks[0] ]
+	highest_straight = []
+	populate_highest_straight = [ highest_straight.append(card) for card in cards if card.rank in straight_ranks[0] and card.rank not in [card.rank for card in highest_straight] ]
+	return highest_straight
 def Flush(cards):
 	flush_ranks = GetFlushRanks(cards)
 	if len(cards) < 5 or len(flush_ranks) == 0: return []
