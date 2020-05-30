@@ -44,3 +44,7 @@ def PrintPlayers(hand):
 def PrintPots(hand):
 	for pot in hand.pots:
 		print("POT N"+str(hand.pots.index(pot)+1)+" =", "$"+str(pot.value))
+
+def PrintPotsDebug(hand):
+	for pot in hand.pots:
+		print(hand.pots.index(pot), pot.value, GetPotStakes(pot), pot.MAX)

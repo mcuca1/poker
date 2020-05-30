@@ -343,7 +343,8 @@ class Hand(object):
 				print("Your Cards:", PrintCards(p.cards), "Your Hand:", p.hand['hand'], PrintCards(p.hand['cards']), "Strength:", p.hand['strength'])
 				if hand.comcards: print("Board Cards:", PrintCards(hand.comcards))
 				print("\n")
-				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
+				bet = getattr(p, 'AllIn')(minbet=self.minbet)
+				#bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				if not p.curbet == "Fold": 
 					self.curbet = bet
 					self.minbet = bet if bet > self.minbet else self.minbet
@@ -359,7 +360,8 @@ class Hand(object):
 		print("BOARD", PrintCards(self.comcards))
 		# Let's find if there are any ties
 		print(Counter([hand['strength'] for hand in [p.hand for p in self.players]]))
-
+		PrintPlayers(self)
+		PrintPotsDebug(self)
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player
