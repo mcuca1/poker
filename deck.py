@@ -194,10 +194,10 @@ class Bet(object):
 		self.value = value
 
 class Pot(object):
-	def __init__(self):
+	def __init__(self, MAX=float("inf")):
 		self.value = 0
 		self.players_stakes = defaultdict(int)
-		self.MAX = float("inf")
+		self.MAX = MAX
 	def SetMax(self, MAX):
 		if not self.MAX == float("inf"):
 			try:
@@ -205,7 +205,12 @@ class Pot(object):
 			except IndexError:
 				hand.pots.append(Pot())
 				next_pot = hand.pots[hand.pots.index(self)+1]
-			next_pot.SetMax(MAX-self.MAX)
+			print("!!!!!!!!!!!!!!!!!", MAX, self.MAX)
+			if MAX >= self.MAX:
+				next_pot.SetMax(MAX-self.MAX)
+			else:
+				print("!!!!!!!!!!! Setting to", (MAX-self.MAX))
+				hand.pots.insert(hand.pots.index(self), Pot(MAX=MAX))
 		else:
 			self.MAX = MAX
 	def Add(self, value, player):
@@ -395,7 +400,7 @@ class Hand(object):
 		self.ShowDown()
 	
 
-players =  [('Player1', 4000), ('Player2', 8000), ('Player3', 16000), ('Player4', 500)]
+players =  [('Player1', 4000), ('Player2', 8000), ('Player3', 16000), ('Player4', 6000)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 
@@ -407,4 +412,4 @@ for street in streets:
 		for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
 		for p in hand.folded_players: print(p.name, p.stack, p.curbet, p.position)
 	for potidx, pot in enumerate(hand.pots):
-		print("POT_%s:" % potidx, pot.value, dict(pot.players_stakes))
+		print("POT_%s:" % potidx, pot.value, dict(pot.players_stakes), "MAX:", pot.MAX)
