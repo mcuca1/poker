@@ -206,8 +206,8 @@ class Pot(object):
 				hand.pots.append(Pot())
 				next_pot = hand.pots[hand.pots.index(self)+1]
 				next_pot.MAX = MAX
-			else:
-				self.MAX = MAX
+		else:
+			self.MAX = MAX
 	def Add(self, value, player):
 		if value <= self.MAX:
 			self.value = self.value + value
@@ -335,7 +335,7 @@ class Hand(object):
 						end = True
 						break
 					continue
-				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", "("+ p.position + ")")
+				print(p.index, "PL", p.name, "CUR", p.curbet, "IDX", "("+ p.position + ")", [self.street])
 				print("BEFORE", "BETS", [p.curbet for p in self.players], "STACKS", [p.stack for p in self.players])
 				print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand[0], PrintCards(p.hand[1]))
 				print("BOARD", PrintCards(self.comcards))
@@ -395,7 +395,7 @@ class Hand(object):
 		self.ShowDown()
 	
 
-players =  [('Player1', 500), ('Player2', 1000), ('Player3', 2000), ('Player4', 3000)]
+players =  [('Player1', 3000), ('Player2', 4000), ('Player3', 1000), ('Player4', 500)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 
