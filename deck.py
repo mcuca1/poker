@@ -205,7 +205,7 @@ class Pot(object):
 			except IndexError:
 				hand.pots.append(Pot())
 				next_pot = hand.pots[hand.pots.index(self)+1]
-				next_pot.MAX = MAX
+			next_pot.SetMax(MAX-self.MAX)
 		else:
 			self.MAX = MAX
 	def Add(self, value, player):
@@ -395,7 +395,7 @@ class Hand(object):
 		self.ShowDown()
 	
 
-players =  [('Player1', 3000), ('Player2', 4000), ('Player3', 1000), ('Player4', 500)]
+players =  [('Player1', 4000), ('Player2', 8000), ('Player3', 16000), ('Player4', 500)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 
