@@ -1,0 +1,5 @@
+if all players have the same stake, then we split the pot equally amongst winners
+
+if they don't find the smaller stake and find if the won. if they didn't win, remove from staking players
+
+repeat..

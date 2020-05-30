@@ -11,10 +11,6 @@ from collections import defaultdict
 from modules.hand_funcs import *
 from modules.player_funcs import *
 
-def PrintCards(cards):
-	try: return [card.rank + card.suit for card in cards]
-	except: return False
-
 def PopulatePositions(players):
 	number_of_players = len(players)
 	positions = []
@@ -237,17 +233,7 @@ class Pot(object):
 			self.players_stakes[player].value += pot_max	
 			if bet.value > 0:
 				next_pot = hand.pots[hand.pots.index(self)+1]
-				# print("bet.value left is", bet.value)
-				# try:
-				# 	next_pot = hand.pots[hand.pots.index(self)+1]
-				# except IndexError:
-				# 	print("######################## NEW POT", "pot max", pot_max, "player_max", player_max, "bet value", bet.value)
-				# 	hand.pots.append(Pot())
-				# 	next_pot = hand.pots[hand.pots.index(self)+1]
 				next_pot.Add(bet.value, player)
-### Find a way to update pot total value from player stakes
-### store player stakes as Value objects (change class)
-
 
 class Hand(object):
 	def __init__(self):

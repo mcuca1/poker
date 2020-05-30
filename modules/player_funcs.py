@@ -30,3 +30,7 @@ def CleanPotStakes(pot):
 	for player, stake in pot.players_stakes.items():
 		if stake.value == 0: players_to_remove.append(player)
 	for player in players_to_remove: del pot.players_stakes[player]
+
+def PrintCards(cards):
+	try: return [card.rank + card.suit for card in cards]
+	except: return False

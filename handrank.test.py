@@ -1,117 +1,8 @@
-import random
-from random import shuffle
-import numpy as np
-from collections import deque
-import inspect
+from modules.hand_funcs import *
+from modules.player_funcs import *
 
-def HandRank(cards):
-	def ranks_to_rankdict(ranks):
-		# rankdict to be used for sorting
-		return dict([(t[1], t[0]) for t in list(enumerate(ranks))])
-	def SortUniqueRanks(cards, rankdict=ranks_to_rankdict(RANKS())):
-		ranks = set(list([card.rank for card in cards]))
-		return sorted(ranks, key=lambda x: rankdict[x], reverse=True)
-	def SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS())):
-		cards.sort(key=lambda x: rankdict[x.rank], reverse=True)
-		return cards
-	def GetRankHandRanks(cards, n):
-		ranks = []
-		for rank in SortUniqueRanks(cards):
-			if sum(card.rank == rank for card in cards) == n: ranks.append(rank)
-		return ranks
-	# Pairs, sets and quads are one rank hands, changing only the number of cards
-	def OneRankHand(cards, n):
-		# Kickers are the best cards left between the hand and the total 5
-		kickers = 5 - n
-		# Return highest pair + highest kickers
-		rankhand_ranks = GetRankHandRanks(cards, n)
-		if len(rankhand_ranks) == 0: return []
-		highest_rankhand = [card for card in cards if card.rank in rankhand_ranks[0]]
-		for card in highest_rankhand: cards.remove(card)
-		cards = SortCardsByRank(cards)[:kickers]
-		return highest_rankhand + cards
-	def GetStraightRanks(cards):
-		sorted_ranks, sorted_ranks_acelow = SortUniqueRanks(cards), SortUniqueRanks(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False)))
-		combinations = []
-		straight_ranks = []
-		for ranks in [sorted_ranks, sorted_ranks_acelow]: 
-			for idx,i in enumerate(range(len(ranks)-4)): combinations.append(''.join(ranks[idx:(5+idx)]))
-		for c in combinations:
-			if (c in ''.join(reversed(RANKS())) or c in ''.join(reversed(RANKS(acehigh=False)))): straight_ranks.append(c)
-		return straight_ranks
-	def GetFlushRanks(cards):
-		suits = SUITS()
-		flush_cards = []
-		combinations = []
-		for suit in suits: flush_cards.append([card for card in cards if card.suit == suit and len([card.rank for card in cards if card.suit == suit])>=5])	
-		for cards in list(filter(None, flush_cards)):
-				for ranks in SortUniqueRanks(cards), SortUniqueRanks(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False))):
-					for idx,i in enumerate(range(len(ranks)-4)): combinations.append(''.join(ranks[idx:(5+idx)]))
-		return combinations
-	def HighCard(cards):
-		# Return 5 highest cards
-		return SortCardsByRank(cards)[:5]
-	def Pair(cards):
-		return OneRankHand(cards, 2)
-	def TwoPair(cards):
-		# Kickers are the best cards left between the hand and the total 5
-		kickers = 1
-		pairs = []
-		for rank in SortUniqueRanks(cards):
-			if sum(card.rank == rank for card in cards) == 2: pairs.append([card for card in cards if card.rank == rank])
-		if len(pairs) >=2:
-			for card in [card for pair in pairs[:2] for card in pair]: cards.remove(card)
-			kicker = SortCardsByRank(cards)[0]
-			return [card for pair in pairs[:2] for card in pair] + [kicker]
-		return []
-	def Set(cards):
-		return OneRankHand(cards, 3)
-	def Straight(cards):
-		straight_ranks = GetStraightRanks(cards)
-		if len(cards) < 5 or len(straight_ranks) == 0: return []
-		cards = SortCardsByRank(cards)
-		# We want reverse order for a wheel
-		if straight_ranks[0] == '5432A': cards = SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False)))
-		return [ card for card in cards if card.rank in straight_ranks[0] ]
-	def Flush(cards):
-		flush_ranks = GetFlushRanks(cards)
-		if len(cards) < 5 or len(flush_ranks) == 0: return []
-		cards = SortCardsByRank(cards)
-		return [ card for card in cards if card.rank in flush_ranks[0] ]
-	def FullHouse(cards):
-		set_ranks = GetRankHandRanks(cards, 3)
-		pair_ranks = GetRankHandRanks(cards, 2)
-		if len(cards) < 5 or len(set_ranks) == 0 or len(pair_ranks) == 0: return []
-		return [ card for card in cards if card.rank in set_ranks[0] ] + [ card for card in cards if card.rank in pair_ranks[0] ]
-		# we want to order the full house with set first..
-	def Quads(cards):
-		return OneRankHand(cards, 4)
-	def StraightFlush(cards):
-		straight_ranks = GetStraightRanks(cards)
-		flush_ranks = GetFlushRanks(cards)
-		if len(cards) < 5 or len(flush_ranks) == 0 or len(straight_ranks) == 0: return []
-		straightflush_ranks = [ranks for ranks in flush_ranks if ranks in straight_ranks]
-		cards = SortCardsByRank(cards)
-		if straightflush_ranks[0] == '5432A': cards = SortCardsByRank(cards, rankdict=ranks_to_rankdict(RANKS(acehigh=False)))
-		return [ card for card in cards if card.rank in straightflush_ranks[0] ]
-	def RoyalFlush(cards):
-		straightflush = StraightFlush(cards)
-		if len(cards) < 5 or len(straightflush) == 0: return []
-		if straightflush[0].rank == "A":
-			return straightflush
-		return []
-	# Exec all hand functions, the first strongest we find is our hand
-	for hand in reversed(HANDS()):
-		hand_cards = locals()[hand](cards)
-		if any(hand_cards): return (hand, hand_cards)
-
-def RANKS(acehigh=True): 
-	RANKS = deque([ "2", "3", "4", "5", "6", "7","8", "9", "T", "J", "Q", "K", "A" ])
-	if acehigh: return list(RANKS)
-	RANKS.rotate(1)
-	return list(RANKS)
-def SUITS(): return [ "Clubs", "Diamonds", "Hearts", "Spades" ]
-def HANDS(): return [ "HighCard", "Pair", "TwoPair", "Set", "Straight", "Flush", "FullHouse", "Quads", "StraightFlush", "RoyalFlush" ]
+a = ['5♦', '3♦']
+b = ['K♠', 'Q♠', '2♠', '8♠', '3♠']
 
 class Card:
 	def __init__(self, rank, suit):
@@ -120,15 +11,15 @@ class Card:
 	def __eq__(self, other):
 		return self.rank == other.rank and self.suit == other.suit
 
-player_cards = [Card("K", "Clubs"), Card("K", "Diamonds")]
-community_cards = [Card("J", "Spade    s"), Card("J", "Hearts"), Card("J", "Diamonds"),  Card("T", "Clubs"), Card("J", "Clubs")]
-cards = player_cards + community_cards
-
-hand, cards = HandRank(cards)
-
-print(hand, [(card.rank, card.suit) for card in cards])
-# Sorting is flipping????
 
 
 
-## HIGHEST STRAIGHT FLUSH?
+# Player3 CARDS ['5♦', '3♦'] HAND Flush ['K♠', 'Q♠', '8♠', '3♦', '3♠', '2♠']
+# Player4 CARDS ['A♦', '9♠'] HAND Flush ['K♠', 'Q♠', '9♠', '8♠', '3♠']
+# Player1 CARDS ['8♣', '4♥'] HAND Flush ['K♠', 'Q♠', '8♣', '8♠', '3♠', '2♠']
+# Player2 CARDS ['3♥', '2♣'] HAND Flush ['K♠', 'Q♠', '8♠', '3♥', '3♠', '2♣', '2♠']
+# BOARD ['K♠', 'Q♠', '2♠', '8♠', '3♠']
+
+hand = HandRank([Card(x[0],x[1]) for x in a] + [Card(x[0],x[1]) for x in b])
+
+print(hand[0], PrintCards(hand[0]))
