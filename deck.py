@@ -189,17 +189,22 @@ class Player(object):
 		#hand.players.remove(self)
 		self.curbet = "Fold"
 
-class Bet(object):
+class StakesDict(defaultdict):
+    def __missing__(self, key):
+        self[key] = value = ValueContainer(0)
+        return value
+
+class ValueContainer(object):
 	def __init__(self, value):
 		self.value = value
 
 class Pot(object):
 	def __init__(self, MAX=float("inf")):
-		self.players_stakes = defaultdict(int)
+		self.players_stakes = StakesDict()
 		self.MAX = MAX
 	@property
 	def value(self):
-		return sum(self.players_stakes.values())
+		return sum([x.value for x in self.players_stakes.values()])
 	def SetMax(self, MAX):
 		if not self.MAX == float("inf"):
 			if MAX >= self.MAX:
@@ -213,17 +218,16 @@ class Pot(object):
 			else:
 				print("!!!!!!!!!!! Setting to", (MAX))
 				hand.pots.insert(hand.pots.index(self), Pot(MAX=MAX))
-
 		else:
 			self.MAX = MAX
 	def Add(self, value, player):
 		if value <= self.MAX:
-			self.players_stakes[player] += value
+			self.players_stakes[player].value += value
 		else:
-			bet = Bet(value)
-			player_max = self.MAX - self.players_stakes[player]
-			pot_max = GetValue(bet, player_max)
-			self.players_stakes[player] += pot_max	
+			bet = ValueContainer(value)
+			player_max = self.MAX - self.players_stakes[player].value
+			pot_max = TakeValue(bet, player_max)
+			self.players_stakes[player].value += pot_max	
 			if bet.value > 0:
 				next_pot = hand.pots[hand.pots.index(self)+1]
 				# print("bet.value left is", bet.value)
@@ -354,7 +358,7 @@ class Hand(object):
 				print("TO CALL", ((self.minbet - p.curbet) if (self.minbet - p.curbet) < p.stack else p.stack))
 				# For the love or god do not use idx here
 				for potidx, pot in enumerate(self.pots):
-					print("POT_%s:" % potidx, pot.value, dict(pot.players_stakes), "MAX:", pot.MAX)
+					print("POT_%s:" % potidx, pot.value, GetPotStakes(pot), "MAX:", pot.MAX)
 				
 				bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
 				
@@ -406,7 +410,7 @@ class Hand(object):
 		self.ShowDown()
 	
 
-players =  [('Player6', 16000), ('Player1', 24000), ('Player2', 17000), ('Player3', 2500), ('Player4', 4000), ('Player5', 8000)]
+players =  [('Player6', 16000), ('Player1', 16050), ('Player2', 15000), ('Player3', 2500), ('Player4', 4000), ('Player5', 8000)]
 streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
 
@@ -418,4 +422,4 @@ for street in streets:
 		for p in hand.players: print(p.name, p.stack, p.curbet, p.position)
 		for p in hand.folded_players: print(p.name, p.stack, p.curbet, p.position)
 	for potidx, pot in enumerate(hand.pots):
-		print("POT_%s:" % potidx, pot.value, dict(pot.players_stakes), "MAX:", pot.MAX)
+		print("POT_%s:" % potidx, pot.value, GetPotStakes(pot), "MAX:", pot.MAX)
