@@ -11,6 +11,9 @@ from collections import defaultdict
 from modules.hand_funcs import *
 from modules.player_funcs import *
 
+def PLAYERS(): return [('Player0', 500), ('Player1', 750), ('Player2', 800), ('Player3', 350)]
+def STREETS(): return ['PreFlop', 'Flop', 'Turn', 'River']
+
 def PopulatePositions(players):
 	number_of_players = len(players)
 	positions = []
@@ -243,7 +246,7 @@ class Hand(object):
 		self.small_blind = 10
 		self._comcards = []
 		self.folded_players = []
-		self.players = deque([ Player(name, stack) for (name, stack) in players ])
+		self.players = deque([ Player(name, stack) for (name, stack) in PLAYERS() ])
 		# If it's the first round, we need to randompy choose a dealer
 		self.first_dealer_idx = list(self.players).index(np.random.choice(self.players, 1, replace=False)[0])
 		# Static dealer for testing
@@ -392,11 +395,9 @@ class Hand(object):
 		self.DealOntable(1)
 		if self.betting: self.BettingRound()
 		self.ShowDown()
-	
+	def Start(self):	
+		for street in STREETS():
+			getattr(self, street)()
 
-players =  [('Player0', 500), ('Player1', 750), ('Player2', 800), ('Player3', 350)]
-streets = ['PreFlop', 'Flop', 'Turn', 'River']
 hand = Hand()
-
-for street in streets:
-	getattr(hand, street)()
+hand.Start()
