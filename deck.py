@@ -68,6 +68,7 @@ class Player(object):
 		self.position = None
 		self.name = name
 		self.stack = stack
+		self.starting_stack = stack.value
 		self.curbet = 0
 		self._cards = None
 		self.hand = None
@@ -160,7 +161,6 @@ class Pot(object):
 	def value(self):
 		return sum([x.value for x in self.players_stakes.values()])
 	def SetMax(self, MAX):
-		print("SETMAX", MAX)
 		if not self.MAX == float("inf"):
 			if MAX >= self.MAX:
 				try:
@@ -172,7 +172,7 @@ class Pot(object):
 			else:
 				new_pot_index = hand.pots.index(self)
 				hand.pots.insert(new_pot_index, Pot(MAX=MAX))
-				print(GetPotStakes(hand.pots[new_pot_index+1]))
+				# print(GetPotStakes(hand.pots[new_pot_index+1]))
 				for player, potstake in hand.pots[new_pot_index+1].players_stakes.items():
 					hand.pots[new_pot_index].players_stakes[player].value += TakeValue(potstake, MAX)
 				CleanPotStakes(hand.pots[new_pot_index+1])
@@ -318,23 +318,27 @@ class Hand(object):
 		print("BOARD", PrintCards(self.comcards))
 		# Let's find if there are any ties
 		# print(Counter([hand['strength'] for hand in [p.hand for p in self.players]]))
-		PrintPlayers(self)
-		PrintPotsDebug(self)
+		# PrintPlayers(self)
+		# PrintPotsDebug(self)
 		ranked_unique_hands = sorted(list(set(p.hand['strength'] for p in ActivePlayers(self.players))), reverse=True)
 		for hand in ranked_unique_hands:
 			players_with_hand = ActivePlayersWithHand(self.players, hand)
 			for pot in self.pots:
 				# How many players with this hand have a stake in the pot?
 				hand_players_in_pot = GetPlayersInPot(players_with_hand, pot)
-				print(hand, self.pots.index(pot), [p.name for p in hand_players_in_pot])
+				# print(hand, self.pots.index(pot), [p.name for p in hand_players_in_pot])
 				# If we are iterating, we are in the pot!
 				for player in hand_players_in_pot:	
 					# We get the value of the pot divided by the number of the hand_players in pot
-					player.stack.value += TakeValueFromPot(pot, len(hand_players_in_pot))
-			break
-		PrintPotsDebug(self)
-		print("Pots with Value", PotsWithValue(self.pots))
-
+					# print(player.name, "starting stack", player.starting_stack)
+					value_taken = TakeValueFromPot(pot, len(hand_players_in_pot))
+					# print("taken", value_taken, "from pot", self.pots.index(pot))
+					player.stack.value += value_taken
+					# print(player.name, "new stack", player.stack.value)
+			# Nothing more to take, we are done
+			if not len(PotsWithValue(self.pots)): break
+		# PrintPotsDebug(self)
+		# print("Pots with Value", PotsWithValue(self.pots))
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player
