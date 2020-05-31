@@ -325,9 +325,8 @@ class Hand(object):
 		active_players = ActivePlayers(self.players)
 		ranked_unique_hands = sorted(list(set(p.hand['strength'] for p in active_players)), reverse=True)
 		for hand in ranked_unique_hands:
+			hand_value = 0
 			players_with_hand = ActivePlayersWithHand(self.players, hand)
-			self.winning_hands.append( (GetHandCards(GetHandWithStrength(hand, active_players)), GetPlayerNames(players_with_hand)) )
-			## above, winning hands as a dict.. holdon
 			for pot in self.pots:
 				# How many players with this hand have a stake in the pot?
 				hand_players_in_pot = GetPlayersInPot(players_with_hand, pot)
@@ -339,10 +338,14 @@ class Hand(object):
 					value_taken = TakeValueFromPot(pot, len(hand_players_in_pot))
 					# print("taken", value_taken, "from pot", self.pots.index(pot))
 					player.stack.value += value_taken
+					hand_value += value_taken
 					# print(player.name, "new stack", player.stack.value)
 			# Nothing more to take, we are done
+			self.winning_hands.append( (GetHandCards(GetHandWithStrength(hand, active_players)), GetPlayerNames(players_with_hand), hand_value) )
+			# log winning hands and value taken by players
+			# Nothing more to take, we are done
 			if not len(PotsWithValue(self.pots)): break
-		# PrintPotsDebug(self)
+		PrintPotsDebug(self)
 		# print("Pots with Value", PotsWithValue(self.pots))
 		pprint(self.winning_hands)
 
