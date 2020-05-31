@@ -25,3 +25,6 @@ def PotsWithValue(pots):
 def TakeValueFromPot(pot, portion):
 	from modules.player_funcs import ValueContainer
 	return sum([TakeValue(stake, (stake.value/portion)) for stake in pot.players_stakes.values()])
+
+def GetHandCards(hand):
+	return [card.rank + card.suit for card in hand['cards']]

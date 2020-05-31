@@ -59,17 +59,6 @@ def ActivePlayers(players):
 def MyPots(player, pots):
 	return [pot for pot in pots if player.name in pot.players_stakes.keys()]
 
-def TakeValue(fromthis, thismuch):
-	if fromthis.value > thismuch:
-		fromthis.value = fromthis.value - thismuch
-		# Return what you've taken
-		return thismuch
-	else:
-		# There isn't enough, take what's in there
-		thismuch = fromthis.value
-		fromthis.value = 0
-		return thismuch
-
 def GetPotStakes(pot):
 	stakes = []
 	for player, stake in pot.players_stakes.items():
@@ -106,3 +95,9 @@ def ActivePlayersWithHand(players, hand):
 
 def GetPlayersInPot(players, pot):
 	return [p for p in players if p.name in pot.players_stakes.keys()]
+
+def GetHandWithStrength(strength, players):
+	return next(iter([p.hand for p in players if p.hand['strength'] == strength ]))
+
+def GetPlayerNames(players):
+	return [p.name for p in players]
