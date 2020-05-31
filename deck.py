@@ -11,6 +11,7 @@ from collections import defaultdict
 from modules.hand_funcs import *
 from modules.player_funcs import *
 from pprint import pprint
+from fractions import Fraction
 
 def MapStreet(idx):
 	streets = dict([(2,'PreFlop'),(3,'Flop'),(4,'Turn'),(5,'River')])
@@ -55,6 +56,7 @@ class Player(object):
 		self.position = None
 		self.name = name
 		self.stack = stack
+		self.info = []
 		self.starting_stack = stack.value
 		self.hand_winnings = 0
 		self.curbet = 0
@@ -87,18 +89,18 @@ class Player(object):
 			options.append("Bet")
 		options.append("AllIn")
 		# and they are in the same pot, which they wouldnt be if they went all in on flop with smaller stack
-		if any([p for p in hand.players if isinstance(p.curbet, int) and p.curbet >= self.stack]):
+		if any([p for p in hand.players if isinstance(p.curbet, int) and p.curbet >= self.stack.value]):
 			options.remove("Raise")
 		return options
 	def BetPrompt(self, minbet):
 		while True:
 			try:
-				betsize = int(input('%s, enter bet size %s-%s\n' % (self.name, minbet, self.stack)))
-				if betsize < minbet or betsize > self.stack:
+				betsize = int(input('%s, enter bet size %s-%s\n' % (self.name, minbet, self.stack.value)))
+				if betsize < minbet or betsize > self.stack.value:
 					raise ValueError
 				return betsize
 			except ValueError:
-				print("Invalid integer. The number must be in the range of %s-%s." % (minbet, self.stack))
+				print("Invalid integer. The number must be in the range of %s-%s." % (minbet, self.stack.value))
 	def Bet(self, minbet=False, betsize=False):
 		minbet = minbet - self.curbet
 		if betsize is False: betsize = self.BetPrompt(minbet)
@@ -196,7 +198,8 @@ class Hand(object):
 		# If it's the first round, we need to randompy choose a dealer
 		self.first_dealer_idx = list(self.players).index(np.random.choice(self.players, 1, replace=False)[0])
 		# Static dealer for testing
-		self.first_dealer_idx = 1
+		# Debug fixed dealer
+		# self.first_dealer_idx = 1
 		self.players[self.first_dealer_idx].isdealer = True
 		# Now let's rotate the players so that the dealer is in position -3
 		rotate = ((len(self.players)-self.first_dealer_idx)-3)
@@ -292,8 +295,20 @@ class Hand(object):
 				print("Your Cards:", PrintCards(p.cards), "Your Hand:", p.hand['hand'], PrintCards(p.hand['cards']), "Strength:", p.hand['strength'])
 				if hand.comcards: print("Board Cards:", PrintCards(hand.comcards))
 				print("\n")
-				bet = getattr(p, 'AllIn')(minbet=self.minbet)
-				#bet = getattr(p, Action(p.GenOptions()))(minbet=self.minbet)
+				# Debug everybody all-in
+				# bet = getattr(p, 'AllIn')(minbet=self.minbet)
+				player_options = p.GenOptions()
+				# Let's give the player some info to decide
+				if "Call" in player_options:
+					to_call = ((self.minbet - p.curbet) if (self.minbet - p.curbet) < p.stack.value else p.stack.value)
+					total_pots_value = GetTotalPotsValue(self.pots)
+					stand_to_win = total_pots_value if total_pots_value < p.stack.value else p.stack.value  
+					p.info.append("To Call: $%s" % to_call)
+					p.info.append("Pot Odds: %s or %s" % ( round((to_call/stand_to_win),2), OddsToFraction((to_call/stand_to_win)) ) ) 
+				# Have to think minraise over
+				#if "Raise" in player_options: p.info.append("Min Raise: $%s", % )
+				PrintInfo(p.info)
+				bet = getattr(p, Action(player_options))(minbet=self.minbet)
 				if not p.curbet == "Fold": 
 					self.curbet = bet
 					self.minbet = bet if bet > self.minbet else self.minbet
@@ -342,7 +357,7 @@ class Hand(object):
 			if not len(PotsWithValue(self.pots)): break
 		PrintPotsDebug(self)
 		pprint(self.winning_hands)
-		# pprint([(p.name, p.starting_stack, p.stack.value) for p in self.players])
+		pprint([(p.name, p.starting_stack, p.stack.value, (p.stack.value-p.starting_stack)) for p in self.players])
 
 	def PreFlop(self):
 		self.NewStreet()

@@ -32,3 +32,17 @@ def GetHandCards(hand):
 def GetCardsfromPrintCards(printcards):
 	from modules.hand_funcs import Card
 	return [ Card(card[0], card[1]) for card in printcards ]
+
+def PrintInfo(info):
+	for line in info:
+		print("PlayerInfo: " + line, "\n")
+
+def GetTotalPotsValue(pots):
+	return sum([pot.value for pot in pots])
+
+
+def OddsToFraction(odds):
+	fraction = odds.as_integer_ratio()
+	numerator = fraction[0]/fraction[0]
+	denominator = fraction[1]/fraction[0]
+	return "%s in %s" % ( int(round(numerator, 0)), round(denominator, 1) )

@@ -1,5 +1,6 @@
 from modules.hand_funcs import *
 from modules.player_funcs import *
+from fractions import Fraction
 
 #and 2 pair
 
@@ -42,24 +43,35 @@ class Card:
 # print(hand['hand'], PrintCards(hand['cards']))
 
 
-def PLAYERS(): 
-	players = [	(['Player0', 500], {'debug_cards': ['6♣', '2♦']}), 
-				(['Player1', 750], {'debug_cards': ['8♥', '5♣']}), 
-				(['Player2', 800], {'debug_cards': ['8♣', '2♠']}), 
-				(['Player3', 350], {'debug_cards': ['7♦', '2♣']})
-				]
-	#return players
-	return [([p[0][0], ValueContainer(p[0][1])], p[1]) for p in players]
+# def PLAYERS(): 
+# 	players = [	(['Player0', 500], {'debug_cards': ['6♣', '2♦']}), 
+# 				(['Player1', 750], {'debug_cards': ['8♥', '5♣']}), 
+# 				(['Player2', 800], {'debug_cards': ['8♣', '2♠']}), 
+# 				(['Player3', 350], {'debug_cards': ['7♦', '2♣']})
+# 				]
+# 	#return players
+# 	return [([p[0][0], ValueContainer(p[0][1])], p[1]) for p in players]
 
-# deque([ Player(*args, **kwargs) for args in PLAYERS() ])
+# # deque([ Player(*args, **kwargs) for args in PLAYERS() ])
 
-for args, kwargs in PLAYERS():
-	print(args, kwargs)
-
-
-printcards = ['6♣', '2♦']
+# for args, kwargs in PLAYERS():
+# 	print(args, kwargs)
 
 
-cards = [ Card(card[0], card[1]) for card in printcards ]
+# printcards = ['6♣', '2♦']
 
-print(cards)
+
+# cards = [ Card(card[0], card[1]) for card in printcards ]
+
+# print(cards)
+
+
+def OddsToFraction(odds):
+	fraction = odds.as_integer_ratio()
+	numerator = fraction[0]/fraction[0]
+	denominator = fraction[1]/fraction[0]
+	return "%s in %s" % ( int(round(numerator, 0)), round(denominator, 1) )
+
+fraction = OddsToFraction(0.27)
+
+print(fraction)
