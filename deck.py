@@ -50,6 +50,7 @@ class Player(object):
 			hand.pots[0].SetMax(self.curbet)
 	def __init__(self, name, stack, straddle=0, debug_cards=None):
 		self.index = None
+		self.last_action = None
 		self.debug_cards = debug_cards
 		self.straddle = straddle
 		self.flop_index = None
@@ -105,6 +106,8 @@ class Player(object):
 		minbet = minbet - self.curbet
 		if betsize is False: betsize = self.BetPrompt(minbet)
 		self.curbet = self.curbet + betsize
+		if betsize == self.stack.value: self.last_action = "AllIn"
+		if hand.street == 2 and (betsize == hand.small_blind or betsize == hand.small_blind*2) and self.index >= hand.start_players_n-2: self.last_action = "Post"
 		TakeValue(self.stack, betsize)
 		# Need to trigger value change
 		self.stack = self.stack
@@ -112,8 +115,10 @@ class Player(object):
 		main_pot = hand.pots[0]
 		main_pot.Add((betsize), self.name)
 		#hand.minbet = self.curbet
+		hand.history.append([StreetIdxToStreet(hand.street), self.name, self.last_action, betsize, self.position])
 		return self.curbet
 	def Raise(self, *args, **kwargs):
+		self.last_action = "Raise"
 		# Let's get all the bets in the current session, and sort them by size:
 		bets = sorted(list(set([p.curbet for p in hand.players if isinstance(p.curbet, int)])), reverse=True)
 		# Big blind preflop is a raise if everybody called, but would break as there  is no smaller bet
@@ -126,26 +131,31 @@ class Player(object):
 		# Only exception is the first raise preflop that has to be at least 2*BB
 		if bets[0] == 2*hand.small_blind: minbet = 4*hand.small_blind
 		betsize = self._bet(minbet=minbet)
-		hand.history.append([StreetIdxToStreet(hand.street), self.name, "raise", betsize, self.position])
+		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "raise", betsize, self.position])
 		return betsize
 	def Bet(self, minbet):
+		self.last_action = "Bet"
 		betsize = self._bet(minbet=minbet)
-		hand.history.append([StreetIdxToStreet(hand.street), self.name, "bet", betsize, self.position])
+		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "bet", betsize, self.position])
 		return betsize
 	def Check(self, minbet):
-		hand.history.append([StreetIdxToStreet(hand.street), self.name, "check", self.position])
+		self.last_action = "Check"
+		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "check", self.position])
 		return self._bet(minbet=minbet, betsize=0)
 	def AllIn(self, minbet):
-		hand.history.append([StreetIdxToStreet(hand.street), self.name, "all in", self.stack.value, self.position])
+		self.last_action = "AllIn"
+		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "all in", self.stack.value, self.position])
 		return self._bet(minbet=minbet, betsize=self.stack.value)
 	def Call(self, minbet):
+		self.last_action = "Call"
 		minbet = minbet - self.curbet
 		betsize = minbet if minbet <= self.stack.value else self.stack.value 
-		hand.history.append([StreetIdxToStreet(hand.street), self.name, "call", betsize, self.position])
+		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "call", betsize, self.position])
 		return self._bet(minbet=minbet, betsize=betsize)
 	def Fold (self, *args, **kwargs):
 		#hand.players.remove(self)
-		hand.history.append([StreetIdxToStreet(hand.street), self.name, "fold", self.position])
+		self.last_action = "Fold"
+		hand.history.append([StreetIdxToStreet(hand.street), self.name, "Fold", self.position])
 		self.curbet = "Fold"
 
 class StakesDict(defaultdict):
