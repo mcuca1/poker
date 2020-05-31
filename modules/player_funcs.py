@@ -103,3 +103,6 @@ def PrintPotsDebug(hand):
 
 def ActivePlayersWithHand(players, hand):
 	return [p for p in players if p.hand['strength'] == hand]
+
+def GetPlayersInPot(players, pot):
+	return [p for p in players if p.name in pot.players_stakes.keys()]

@@ -1,3 +1,13 @@
+def TakeValue(fromthis, thismuch):
+	if fromthis.value > thismuch:
+		fromthis.value = fromthis.value - thismuch
+		# Return what you've taken
+		return thismuch
+	else:
+		# There isn't enough, take what's in there
+		thismuch = fromthis.value
+		fromthis.value = 0
+		return thismuch
 
 def reverse_enumerate(L):
 	# Only works on things that have a len()
@@ -12,6 +22,6 @@ class ValueContainer(object):
 def PotsWithValue(pots):
 	return [pot for pot in pots if pot.value > 0]
 
-def TakeValueFromPot(pot):
+def TakeValueFromPot(pot, portion):
 	from modules.player_funcs import ValueContainer
-	return sum([TakeValue(stake.value) for stake in pot.players_stakes.values()])
+	return sum([TakeValue(stake, (stake.value/portion)) for stake in pot.players_stakes.values()])

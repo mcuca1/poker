@@ -323,7 +323,17 @@ class Hand(object):
 		ranked_unique_hands = sorted(list(set(p.hand['strength'] for p in ActivePlayers(self.players))), reverse=True)
 		for hand in ranked_unique_hands:
 			players_with_hand = ActivePlayersWithHand(self.players, hand)
-			
+			for pot in self.pots:
+				# How many players with this hand have a stake in the pot?
+				hand_players_in_pot = GetPlayersInPot(players_with_hand, pot)
+				print(hand, self.pots.index(pot), [p.name for p in hand_players_in_pot])
+				# If we are iterating, we are in the pot!
+				for player in hand_players_in_pot:	
+					# We get the value of the pot divided by the number of the hand_players in pot
+					player.stack.value += TakeValueFromPot(pot, len(hand_players_in_pot))
+			break
+		PrintPotsDebug(self)
+		print("Pots with Value", PotsWithValue(self.pots))
 
 	def PreFlop(self):
 		self.NewStreet()
