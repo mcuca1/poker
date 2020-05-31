@@ -11,50 +11,6 @@ from collections import defaultdict
 from modules.hand_funcs import *
 from modules.player_funcs import *
 
-def PLAYERS(): return [('Player0', 500), ('Player1', 750), ('Player2', 800), ('Player3', 350)]
-def STREETS(): return ['PreFlop', 'Flop', 'Turn', 'River']
-
-def PopulatePositions(players):
-	number_of_players = len(players)
-	positions = []
-	if number_of_players > 2:
-		positions.append(dict([
-		(0, 'UTG'),
-		(1, 'UTG+1'),
-		(2, 'UTG+2'),
-		(3, 'UTG+3'),
-		(4, 'UTG+4'),
-		(5, 'UTG+5'),
-		(6, '7th'),
-		(7, '8th'),
-		(8, '9th'),
-		(9, '10th'),
-		(number_of_players-1, 'Big Blind'),
-		(number_of_players-2, 'Small Blind'),
-		(number_of_players-3, 'Dealer'),
-		(number_of_players-4, 'CutOff'),
-		(number_of_players-5, 'HiJack'),
-		]))
-	if number_of_players > 4 and number_of_players <=6:
-		positions.append(dict([
-		(0, 'UTG'),
-		(1, 'UTG+1')
-		]))
-	if number_of_players > 2 and number_of_players <=4:
-		positions.append(dict([
-		(0, 'UTG')
-		]))		
-	if number_of_players == 2:
-		positions.append(dict([
-		(-0, 'Small Blind'),
-		(-1, 'Dealer')
-		]))
-	for player in players:
-		for pos_dict in positions:
-			try:
-				player.position = pos_dict[player.index]
-			except:
-				pass
 
 def MapStreet(idx):
 	streets = dict([(2,'PreFlop'),(3,'Flop'),(4,'Turn'),(5,'River')])
@@ -74,7 +30,7 @@ def Action(options):
 		i = input("Enter number: ")
 		try:
 			if 0 < int(i) <= len(options):
-				return options[int(i)-1]
+				return options[int(i)  -1]
 			else:
 				continue
 		except:
@@ -104,10 +60,11 @@ class Player(object):
 		self._stack = stack
 		# The stack is updated at every bet, if the stack becomes zero, the player is all in
 		# And we need to lock the pot to his last bet size
-		if self._stack == 0: 
+		if self._stack.value == 0: 
 			hand.pots[0].SetMax(self.curbet)
-	def __init__(self, name, stack):
+	def __init__(self, name, stack, straddle=0):
 		self.index = None
+		self.straddle = straddle
 		self.flop_index = None
 		self.position = None
 		self.name = name
@@ -158,7 +115,10 @@ class Player(object):
 		minbet = minbet - self.curbet
 		if betsize is False: betsize = self.BetPrompt(minbet)
 		self.curbet = self.curbet + betsize
-		self.stack = self.stack - betsize
+		TakeValue(self.stack, betsize)
+		# Need to trigger value change
+		self.stack = self.stack
+		#self.stack = self.stack - betsize
 		main_pot = hand.pots[0]
 		main_pot.Add((betsize), self.name)
 		#hand.minbet = self.curbet
@@ -179,10 +139,10 @@ class Player(object):
 	def Check(self, minbet):
 		return self.Bet(minbet=minbet, betsize=0)
 	def AllIn(self, minbet):
-		return self.Bet(minbet=minbet, betsize=self.stack)
+		return self.Bet(minbet=minbet, betsize=self.stack.value)
 	def Call(self, minbet):
 		minbet = minbet - self.curbet
-		betsize = minbet if minbet <= self.stack else self.stack 
+		betsize = minbet if minbet <= self.stack.value else self.stack.value 
 		return self.Bet(minbet=minbet, betsize=betsize)
 	def Fold (self, *args, **kwargs):
 		#hand.players.remove(self)
@@ -193,10 +153,6 @@ class StakesDict(defaultdict):
         self[key] = value = ValueContainer(0)
         return value
 
-class ValueContainer(object):
-	def __init__(self, value):
-		self.value = value
-
 class Pot(object):
 	def __init__(self, MAX=float("inf")):
 		self.players_stakes = StakesDict()
@@ -205,6 +161,7 @@ class Pot(object):
 	def value(self):
 		return sum([x.value for x in self.players_stakes.values()])
 	def SetMax(self, MAX):
+		print("SETMAX", MAX)
 		if not self.MAX == float("inf"):
 			if MAX >= self.MAX:
 				try:
@@ -245,7 +202,7 @@ class Hand(object):
 		self.small_blind = 10
 		self._comcards = []
 		self.folded_players = []
-		self.players = deque([ Player(name, stack) for (name, stack) in PLAYERS() ])
+		self.players = deque([ Player(*args) for args in PLAYERS() ])
 		# If it's the first round, we need to randompy choose a dealer
 		self.first_dealer_idx = list(self.players).index(np.random.choice(self.players, 1, replace=False)[0])
 		# Static dealer for testing
@@ -293,7 +250,7 @@ class Hand(object):
 			return True
 	def PlayerBettingOver(self):
 		# Skip betting turn if player has folded or is all in 
-		return True if p.curbet == 'Fold' or p.stack == 0 else False
+		return True if p.curbet == 'Fold' or p.stack.value == 0 else False
 	def StreetBettingOver(self, idx):
 		if self.street == 2: # PreFlop
 			if (
@@ -325,7 +282,7 @@ class Hand(object):
 		return not self.betting
 	def SkipBettingTurn(self, player):
 		# Skip betting turn if player has folded or is all in 
-		return True if (player.curbet == 'Fold' or player.stack == 0) else False
+		return True if (player.curbet == 'Fold' or player.stack.value == 0) else False
 	def BettingRound(self):
 		# Start betting round
 		end = False
@@ -361,9 +318,11 @@ class Hand(object):
 		for p in self.players: print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand['hand'], PrintCards(p.hand['cards']), p.hand['strength'])
 		print("BOARD", PrintCards(self.comcards))
 		# Let's find if there are any ties
-		print(Counter([hand['strength'] for hand in [p.hand for p in self.players]]))
+		# print(Counter([hand['strength'] for hand in [p.hand for p in self.players]]))
 		PrintPlayers(self)
 		PrintPotsDebug(self)
+		unique_hands = sorted(list(set(p.hand['strength'] for p in ActivePlayers(self.players))), reverse=True)
+		print(unique_hands)
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player

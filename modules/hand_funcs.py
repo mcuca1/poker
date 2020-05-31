@@ -2,6 +2,7 @@ from collections import deque
 from collections import Counter
 from modules.helper_funcs import *
 
+def STREETS(): return ['PreFlop', 'Flop', 'Turn', 'River']
 def RANKS(acehigh=True): 
 	RANKS = deque([ "2", "3", "4", "5", "6", "7","8", "9", "T", "J", "Q", "K", "A" ])
 	if acehigh: return list(RANKS)

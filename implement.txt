@@ -34,3 +34,7 @@ Over and BettingOver should be bet callbacks..
 
 
 need to remove one of the same cards in a straight if they compose the straight..
+
+
+do pots contain value? Return false or pots that contain value
+
