@@ -36,21 +36,6 @@ def Action(options):
 		except:
 			continue
 
-class Card:
-	def __init__(self, rank, suit):
-		self.rank = rank
-		self.suit = suit
-	def __eq__(self, other):
-		return self.rank == other.rank and self.suit == other.suit
-
-class Deck:
-	def __init__(self):
-		self.contents = [ Card( rank, suit ) for rank in RANKS() for suit in SUITS() ]
-	def Shuffle(self):
-		random.shuffle(self.contents)
-	def RemoveCard(self, card):
-		self.contents.remove(card)
-
 class Player(object):
 	@property
 	def stack(self):
@@ -62,8 +47,9 @@ class Player(object):
 		# And we need to lock the pot to his last bet size
 		if self._stack.value == 0: 
 			hand.pots[0].SetMax(self.curbet)
-	def __init__(self, name, stack, straddle=0):
+	def __init__(self, name, stack, straddle=0, debug_cards=None):
 		self.index = None
+		self.debug_cards = debug_cards
 		self.straddle = straddle
 		self.flop_index = None
 		self.position = None
@@ -199,11 +185,12 @@ class Hand(object):
 		self.deck = Deck()
 		self.pots = [Pot()]
 		self.street = 1
+		self.debug_board = ['J♥', 'T♥', '9♦', '7♠', 'T♠']
 		self.small_blind = 10
 		self._comcards = []
 		self.folded_players = []
 		self.winning_hands = []
-		self.players = deque([ Player(*args) for args in PLAYERS() ])
+		self.players = deque([ Player(*args, **kwargs) for args, kwargs in PLAYERS() ])
 		# If it's the first round, we need to randompy choose a dealer
 		self.first_dealer_idx = list(self.players).index(np.random.choice(self.players, 1, replace=False)[0])
 		# Static dealer for testing
@@ -231,7 +218,7 @@ class Hand(object):
 		self._comcards = cards
 		for p in self.players: p.GetHandRank()
 	def DealOntable(self, number):
-		self.comcards = [*self.comcards, *PickRandomCards(number)]
+		self.comcards = [*self.comcards, *PickRandomCards(number)] if not self.debug_board else self.comcards + GetCardsfromPrintCards(self.debug_board[:number])
 	def NewStreet(self):
 		self.street +=1
 		# Move foldeed players
@@ -352,7 +339,8 @@ class Hand(object):
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player
-		for p in self.players: p.cards = PickRandomCards(2)
+		for p in self.players: 
+			p.cards = PickRandomCards(2) if not p.debug_cards else GetCardsfromPrintCards(p.debug_cards)
 		# Small and big blind, pay!
 		self.players[-2].Bet(betsize=self.small_blind)
 		self.players[-1].Bet(betsize=self.small_blind*2)

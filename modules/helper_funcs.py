@@ -28,3 +28,7 @@ def TakeValueFromPot(pot, portion):
 
 def GetHandCards(hand):
 	return [card.rank + card.suit for card in hand['cards']]
+
+def GetCardsfromPrintCards(printcards):
+	from modules.hand_funcs import Card
+	return [ Card(card[0], card[1]) for card in printcards ]

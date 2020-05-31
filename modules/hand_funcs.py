@@ -124,3 +124,18 @@ def HandRank(cards):
 			for idx, card in reverse_enumerate(hand_cards): weighted_rank_indexes.append((RANKS().index(card.rank)+100)**(idx+1))
 			strength = HANDS().index(hand) + sum(weighted_rank_indexes)/rank_divisor
 			return {'hand': hand, 'cards': hand_cards, 'strength': strength}
+
+class Card:
+	def __init__(self, rank, suit):
+		self.rank = rank
+		self.suit = suit
+	def __eq__(self, other):
+		return self.rank == other.rank and self.suit == other.suit
+
+class Deck:
+	def __init__(self):
+		self.contents = [ Card( rank, suit ) for rank in RANKS() for suit in SUITS() ]
+	def Shuffle(self):
+		random.shuffle(self.contents)
+	def RemoveCard(self, card):
+		self.contents.remove(card)

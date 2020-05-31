@@ -2,8 +2,12 @@ from pprint import pprint
 from modules.helper_funcs import *
 
 def PLAYERS(): 
-	players = [('Player0', 500), ('Player1', 750), ('Player2', 800), ('Player3', 350)]
-	return [(p[0], ValueContainer(p[1])) for p in players]
+	players = [	(['Player0', 500], {'debug_cards': ['6♣', '2♦']}), 
+				(['Player1', 750], {'debug_cards': ['8♥', '5♣']}), 
+				(['Player2', 800], {'debug_cards': ['8♣', '2♠']}), 
+				(['Player3', 350], {'debug_cards': ['7♦', '2♣']})
+				]
+	return [([p[0][0], ValueContainer(p[0][1])], p[1]) for p in players]
 
 def PopulatePositions(players):
 	number_of_players = len(players)
