@@ -39,6 +39,7 @@ def PrintInfo(info):
 	print("\n")
 
 def PrintHistory(history):
+	print("\n")
 	for entry in history:
 		line = "Hand History:  " + ' '.join([str(x) for x in entry])
 		print(line)

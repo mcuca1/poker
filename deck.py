@@ -206,6 +206,8 @@ class Hand(object):
 		self.folded_players = []
 		self.winning_hands = []
 		self.players = deque([ Player(*args, **kwargs) for args, kwargs in PLAYERS() ])
+		# We need to know how many players were in the hand originally
+		self.start_players_n = len(self.players)
 		# If it's the first round, we need to randompy choose a dealer
 		self.first_dealer_idx = list(self.players).index(np.random.choice(self.players, 1, replace=False)[0])
 		# Static dealer for testing
@@ -222,7 +224,7 @@ class Hand(object):
 		for idx, p in enumerate(self.players): p.flop_index = idx
 		# Lets reposition the players
 		self.players.rotate(-2)
-		# Let's turn players into a list again to be able to remove items while looping
+		# Let's turn players into a list again to be able to remove items while looping - (not used anymore..)
 		self.players = list(self.players)
 		# Let's convert player indexes into table positions
 		PopulatePositions(self.players)
@@ -246,14 +248,14 @@ class Hand(object):
 		# and set the minimum bet to the big blind again
 		self.minbet = self.small_blind*2
 		self.curbet = self.minbet
-	def Over(self):
-		if self.over:
-			winning_player = next(filter(lambda p: p.curbet != 'Fold', self.players))
-			winning_player.stack = winning_player.stack + self.pot
-			self.pot = 0
-			return True
+	# def Over(self):
+	# 	if self.over:
+	# 		winning_player = next(filter(lambda p: p.curbet != 'Fold', self.players))
+	# 		winning_player.stack = winning_player.stack + self.pot
+	# 		self.pot = 0
+	# 		return True
 	def PlayerBettingOver(self):
-		# Skip betting turn if player has folded or is all in 
+		#Skip betting turn if player has folded or is all in 
 		return True if p.curbet == 'Fold' or p.stack.value == 0 else False
 	def StreetBettingOver(self, idx):
 		if self.street == 2: # PreFlop
@@ -276,13 +278,25 @@ class Hand(object):
 				): return True
 		return False
 	def HandBettingOver(self):
-		active_players = list(set(self.players) - set(FoldedPlayers(self.players)) - set(AllinPlayers(self.players)))
-		if len(active_players) > 1:
+		betting_players = list(set(self.players) - set(FoldedPlayers(self.players)) - set(AllinPlayers(self.players)))
+		active_players = list(set(self.players) - set(FoldedPlayers(self.players)))
+		if len(betting_players) > 1:
 			self.betting = True
-		elif len(active_players) == 1:
-			self.betting = False if active_players[0].curbet >= self.curbet else True
-		else:
+		elif len(betting_players) == 1:
+			# Needed if all players are all-in preflop before the big blind, otherwise would skip it
+			self.betting = False if betting_players[0].curbet >= self.curbet else True
+		else:  
 			self.betting = False
+		# Note that betting might be over but we still need to go to showdown
+		if not self.betting and len(active_players) == 1:
+			self.over = True
+			winning_player = next(filter(lambda p: p.curbet != 'Fold', self.players))
+			for pot in self.pots:
+				value_taken = TakeValueFromPot(pot, 1)
+				winning_player.stack.value += value_taken
+				winning_player.hand_winnings += value_taken
+		PrintPotsDebug(self)
+		pprint([(p.name, p.starting_stack, p.stack.value, (p.stack.value-p.starting_stack)) for p in self.players])
 		return not self.betting
 	def SkipBettingTurn(self, player):
 		# Skip betting turn if player has folded or is all in 
@@ -292,10 +306,11 @@ class Hand(object):
 		end = False
 		while True:
 			for idx, p in enumerate(self.players):
-				if self.HandBettingOver(): 
+				if self.HandBettingOver():
 					end = True
 					break
 				if self.SkipBettingTurn(p):
+					# Skip if player has folded or is all in
 					if self.StreetBettingOver(idx):
 						end = True
 						break
@@ -373,7 +388,12 @@ class Hand(object):
 		PrintPotsDebug(self)
 		pprint(self.winning_hands)
 		pprint([(p.name, p.starting_stack, p.stack.value, (p.stack.value-p.starting_stack)) for p in self.players])
-
+	def PositionPlayersForFlop(self):
+		# Sort remaining players based on their flop_index, unless it's heads up and they need to be swapped
+		if self.start_players_n > 2: 
+			self.players.sort(key=lambda p: p.flop_index) 
+		else:
+			self.players[0], self.players[1] = self.players[1], self.players[0]
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player
@@ -384,23 +404,19 @@ class Hand(object):
 		self.players[-1]._bet(betsize=self.small_blind*2)
 		# Start betting round
 		self.BettingRound()
-		return True if self.Over() else False
 	def Flop(self):
-		if self.Over(): return False
+		if self.over: return True
 		self.NewStreet()
-		# Sort remaining players based on their flop_index
-		self.players.sort(key=lambda p: p.flop_index)
+		self.PositionPlayersForFlop()
 		self.DealOntable(3)
 		if self.betting: self.BettingRound()
-		return True if self.Over() else False
 	def Turn(self):
-		if self.Over(): return False
+		if self.over: return True
 		self.NewStreet()
 		self.DealOntable(1)
 		if self.betting: self.BettingRound()
-		return True if self.Over() else False
 	def River(self):
-		if self.Over(): return False
+		if self.over: return True
 		self.NewStreet()
 		self.DealOntable(1)
 		if self.betting: self.BettingRound()

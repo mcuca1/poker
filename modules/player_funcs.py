@@ -9,7 +9,7 @@ def PLAYERS():
 				(['Player4', 2000], {'debug_cards': ['8♣', '2♠']}), 
 				(['Player5', 1500], {'debug_cards': ['7♦', '2♣']})
 				]
-	return [([p[0][0], ValueContainer(p[0][1])], p[1]) for p in players]
+	return [([p[0][0], ValueContainer(p[0][1])], p[1]) for p in players[:4]]
 
 def PopulatePositions(players):
 	number_of_players = len(players)
@@ -43,12 +43,12 @@ def PopulatePositions(players):
 		]))		
 	if number_of_players == 2:
 		positions.append(dict([
-		(-0, 'Small Blind'),
-		(-1, 'Dealer     ')
+		(1, 'Big Blind'),
+		(0, 'Dealer/SmallBlind')
 		]))
 	for player in players:
 		for pos_dict in positions:
-			try:
+			try:		
 				player.position = pos_dict[player.index]
 			except:
 				pass
