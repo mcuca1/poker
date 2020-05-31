@@ -56,6 +56,7 @@ class Player(object):
 		self.name = name
 		self.stack = stack
 		self.starting_stack = stack.value
+		self.hand_winnings = 0
 		self.curbet = 0
 		self._cards = None
 		self.hand = None
@@ -179,13 +180,14 @@ class Pot(object):
 				next_pot.Add(bet.value, player)
 
 class Hand(object):
-	def __init__(self):
+	def __init__(self, debug=False):
 		self.over = False
 		self.betting = True
+		self.debug = debug
 		self.deck = Deck()
 		self.pots = [Pot()]
 		self.street = 1
-		self.debug_board = ['J♥', 'T♥', '9♦', '7♠', 'T♠']
+		self.debug_board = ['J♥', 'T♥', '9♦', '7♠', 'T♠'] if debug == True else None
 		self.small_blind = 10
 		self._comcards = []
 		self.folded_players = []
@@ -311,36 +313,42 @@ class Hand(object):
 		# PrintPotsDebug(self)
 		active_players = ActivePlayers(self.players)
 		ranked_unique_hands = sorted(list(set(p.hand['strength'] for p in active_players)), reverse=True)
+		# PrintPotsDebug(self)
 		for hand in ranked_unique_hands:
 			hand_value = 0
 			players_with_hand = ActivePlayersWithHand(self.players, hand)
 			for pot in self.pots:
 				# How many players with this hand have a stake in the pot?
 				hand_players_in_pot = GetPlayersInPot(players_with_hand, pot)
+				# We take our share, once taken we need decrease the share divisor
+				share = len(hand_players_in_pot)
 				# print(hand, self.pots.index(pot), [p.name for p in hand_players_in_pot])
 				# If we are iterating, we are in the pot!
 				for player in hand_players_in_pot:	
 					# We get the value of the pot divided by the number of the hand_players in pot
 					# print(player.name, "starting stack", player.starting_stack)
-					value_taken = TakeValueFromPot(pot, len(hand_players_in_pot))
+					value_taken = TakeValueFromPot(pot, share)
+					# print(player.name, self.pots.index(pot), value_taken)
 					# print("taken", value_taken, "from pot", self.pots.index(pot))
 					player.stack.value += value_taken
+					player.hand_winnings += value_taken
 					hand_value += value_taken
+					share -= 1
 					# print(player.name, "new stack", player.stack.value)
 			# Nothing more to take, we are done
-			self.winning_hands.append( (GetHandCards(GetHandWithStrength(hand, active_players)), GetPlayerNames(players_with_hand), hand_value) )
+			self.winning_hands += [GetHandCards(GetHandWithStrength(hand, active_players)), GetPlayerNames(players_with_hand), hand_value, [ (p.name, p.hand_winnings) for p in players_with_hand]]
 			# log winning hands and value taken by players
 			# Nothing more to take, we are done
 			if not len(PotsWithValue(self.pots)): break
 		PrintPotsDebug(self)
-		# print("Pots with Value", PotsWithValue(self.pots))
 		pprint(self.winning_hands)
+		# pprint([(p.name, p.starting_stack, p.stack.value) for p in self.players])
 
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player
 		for p in self.players: 
-			p.cards = PickRandomCards(2) if not p.debug_cards else GetCardsfromPrintCards(p.debug_cards)
+			p.cards = GetCardsfromPrintCards(p.debug_cards) if (self.debug == True and p.debug_cards) else PickRandomCards(2)
 		# Small and big blind, pay!
 		self.players[-2].Bet(betsize=self.small_blind)
 		self.players[-1].Bet(betsize=self.small_blind*2)
