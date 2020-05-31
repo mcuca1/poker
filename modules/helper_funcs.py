@@ -35,7 +35,14 @@ def GetCardsfromPrintCards(printcards):
 
 def PrintInfo(info):
 	for line in info:
-		print("PlayerInfo: " + line, "\n")
+		print("Info: " + line)
+	print("\n")
+
+def PrintHistory(history):
+	for entry in history:
+		line = "Hand History:  " + ' '.join([str(x) for x in entry])
+		print(line)
+	print("\n")
 
 def GetTotalPotsValue(pots):
 	return sum([pot.value for pot in pots])
@@ -45,3 +52,12 @@ def OddsToFraction(odds):
 	fraction = odds.as_integer_ratio()
 	denominator = fraction[1]/fraction[0]
 	return "one in %s" % round(denominator, 1)
+
+def StreetIdxToStreet(idx):
+	streetsdict = {
+	2: 'PreFlop',
+	3: 'Flop',
+	4: 'Turn',
+	5: 'River'
+	}
+	return streetsdict[idx]

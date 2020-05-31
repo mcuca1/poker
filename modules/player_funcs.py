@@ -5,7 +5,9 @@ def PLAYERS():
 	players = [	(['Player0', 500], {'debug_cards': ['6♣', '2♦']}), 
 				(['Player1', 750], {'debug_cards': ['8♥', '5♣']}), 
 				(['Player2', 800], {'debug_cards': ['8♣', '2♠']}), 
-				(['Player3', 350], {'debug_cards': ['7♦', '2♣']})
+				(['Player3', 850], {'debug_cards': ['7♦', '2♣']}),
+				(['Player4', 2000], {'debug_cards': ['8♣', '2♠']}), 
+				(['Player5', 1500], {'debug_cards': ['7♦', '2♣']})
 				]
 	return [([p[0][0], ValueContainer(p[0][1])], p[1]) for p in players]
 
@@ -14,35 +16,35 @@ def PopulatePositions(players):
 	positions = []
 	if number_of_players > 2:
 		positions.append(dict([
-		(0, 'UTG'),
+		(0, 'UTG  '),
 		(1, 'UTG+1'),
 		(2, 'UTG+2'),
 		(3, 'UTG+3'),
 		(4, 'UTG+4'),
 		(5, 'UTG+5'),
-		(6, '7th'),
-		(7, '8th'),
-		(8, '9th'),
-		(9, '10th'),
-		(number_of_players-1, 'Big Blind'),
+		(6, '7th  '),
+		(7, '8th  '),
+		(8, '9th  '),
+		(9, '10th '),
+		(number_of_players-1, 'Big Blind  '),
 		(number_of_players-2, 'Small Blind'),
-		(number_of_players-3, 'Dealer'),
-		(number_of_players-4, 'CutOff'),
-		(number_of_players-5, 'HiJack'),
+		(number_of_players-3, 'Dealer     '),
+		(number_of_players-4, 'CutOff     '),
+		(number_of_players-5, 'HiJack     '),
 		]))
 	if number_of_players > 4 and number_of_players <=6:
 		positions.append(dict([
-		(0, 'UTG'),
+		(0, 'UTG '),
 		(1, 'UTG+1')
 		]))
 	if number_of_players > 2 and number_of_players <=4:
 		positions.append(dict([
-		(0, 'UTG')
+		(0, 'UTG ')
 		]))		
 	if number_of_players == 2:
 		positions.append(dict([
 		(-0, 'Small Blind'),
-		(-1, 'Dealer')
+		(-1, 'Dealer     ')
 		]))
 	for player in players:
 		for pos_dict in positions:

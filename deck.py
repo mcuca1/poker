@@ -101,7 +101,7 @@ class Player(object):
 				return betsize
 			except ValueError:
 				print("Invalid integer. The number must be in the range of %s-%s." % (minbet, self.stack.value))
-	def Bet(self, minbet=False, betsize=False):
+	def _bet(self, minbet=False, betsize=False):
 		minbet = minbet - self.curbet
 		if betsize is False: betsize = self.BetPrompt(minbet)
 		self.curbet = self.curbet + betsize
@@ -125,17 +125,27 @@ class Player(object):
 		minbet = bets[0]+(bets[0]-bets[1])
 		# Only exception is the first raise preflop that has to be at least 2*BB
 		if bets[0] == 2*hand.small_blind: minbet = 4*hand.small_blind
-		return self.Bet(minbet=minbet)
+		betsize = self._bet(minbet=minbet)
+		hand.history.append([StreetIdxToStreet(hand.street), self.name, "raise", betsize, self.position])
+		return betsize
+	def Bet(self, minbet):
+		betsize = self._bet(minbet=minbet)
+		hand.history.append([StreetIdxToStreet(hand.street), self.name, "bet", betsize, self.position])
+		return betsize
 	def Check(self, minbet):
-		return self.Bet(minbet=minbet, betsize=0)
+		hand.history.append([StreetIdxToStreet(hand.street), self.name, "check", self.position])
+		return self._bet(minbet=minbet, betsize=0)
 	def AllIn(self, minbet):
-		return self.Bet(minbet=minbet, betsize=self.stack.value)
+		hand.history.append([StreetIdxToStreet(hand.street), self.name, "all in", self.stack.value, self.position])
+		return self._bet(minbet=minbet, betsize=self.stack.value)
 	def Call(self, minbet):
 		minbet = minbet - self.curbet
 		betsize = minbet if minbet <= self.stack.value else self.stack.value 
-		return self.Bet(minbet=minbet, betsize=betsize)
+		hand.history.append([StreetIdxToStreet(hand.street), self.name, "call", betsize, self.position])
+		return self._bet(minbet=minbet, betsize=betsize)
 	def Fold (self, *args, **kwargs):
 		#hand.players.remove(self)
+		hand.history.append([StreetIdxToStreet(hand.street), self.name, "fold", self.position])
 		self.curbet = "Fold"
 
 class StakesDict(defaultdict):
@@ -189,6 +199,7 @@ class Hand(object):
 		self.deck = Deck()
 		self.pots = [Pot()]
 		self.street = 1
+		self.history = []
 		self.debug_board = ['J♥', 'T♥', '9♦', '7♠', 'T♠'] if debug == True else None
 		self.small_blind = 10
 		self._comcards = []
@@ -289,10 +300,11 @@ class Hand(object):
 						end = True
 						break
 					continue
+				PrintHistory(self.history)
 				PrintPlayers(self)
 				PrintPots(self)
 				print("\n%s (You) %s\n" % (p.name, p.position))
-				print("Your Cards:", PrintCards(p.cards), "Your Hand:", p.hand['hand'], PrintCards(p.hand['cards']), "Strength:", p.hand['strength'])
+				#print("Your Cards:", PrintCards(p.cards), "Your Hand:", p.hand['hand'], PrintCards(p.hand['cards']), "Strength:", p.hand['strength'])
 				if hand.comcards: print("Board Cards:", PrintCards(hand.comcards))
 				print("\n")
 				# Debug everybody all-in
@@ -300,12 +312,14 @@ class Hand(object):
 				player_options = p.GenOptions()
 				# Let's give the player some info to decide
 				p.info = []
+				p.info.append("Your stack: $%s" % p.stack.value)
 				if "Call" in player_options:
 					to_call = ((self.minbet - p.curbet) if (self.minbet - p.curbet) < p.stack.value else p.stack.value)
 					total_pots_value = GetTotalPotsValue(self.pots)
 					stand_to_win = total_pots_value if total_pots_value < p.stack.value else p.stack.value  
 					p.info.append("To Call: $%s" % to_call)
 					p.info.append("Pot Odds: %s or %s" % ( round((to_call/stand_to_win),2), OddsToFraction((to_call/stand_to_win)) ) ) 
+				p.info.append(' '.join([ "Your Cards:", ' '.join(PrintCards(p.cards)), "Your Hand:", p.hand['hand'] ]) )
 				# Have to think minraise over
 				#if "Raise" in player_options: p.info.append("Min Raise: $%s", % )
 				PrintInfo(p.info)
@@ -366,8 +380,8 @@ class Hand(object):
 		for p in self.players: 
 			p.cards = GetCardsfromPrintCards(p.debug_cards) if (self.debug == True and p.debug_cards) else PickRandomCards(2)
 		# Small and big blind, pay!
-		self.players[-2].Bet(betsize=self.small_blind)
-		self.players[-1].Bet(betsize=self.small_blind*2)
+		self.players[-2]._bet(betsize=self.small_blind)
+		self.players[-1]._bet(betsize=self.small_blind*2)
 		# Start betting round
 		self.BettingRound()
 		return True if self.Over() else False
