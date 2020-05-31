@@ -40,3 +40,7 @@ do pots contain value? Return false or pots that contain value
 
 
 Hand info, what players did! Should be printed for interactive player
+
+####
+fractions of pot betsizes
+multiples of previous bet raises

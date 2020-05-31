@@ -106,8 +106,10 @@ class Player(object):
 		minbet = minbet - self.curbet
 		if betsize is False: betsize = self.BetPrompt(minbet)
 		self.curbet = self.curbet + betsize
+		## Action special definitions
 		if betsize == self.stack.value: self.last_action = "AllIn"
 		if hand.street == 2 and (betsize == hand.small_blind or betsize == hand.small_blind*2) and self.index >= hand.start_players_n-2: self.last_action = "Post"
+		if self.last_action == "Raise" and betsize == minbet: self.last_action = "MinRaise"
 		TakeValue(self.stack, betsize)
 		# Need to trigger value change
 		self.stack = self.stack
