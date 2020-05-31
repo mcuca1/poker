@@ -299,6 +299,7 @@ class Hand(object):
 				# bet = getattr(p, 'AllIn')(minbet=self.minbet)
 				player_options = p.GenOptions()
 				# Let's give the player some info to decide
+				p.info = []
 				if "Call" in player_options:
 					to_call = ((self.minbet - p.curbet) if (self.minbet - p.curbet) < p.stack.value else p.stack.value)
 					total_pots_value = GetTotalPotsValue(self.pots)

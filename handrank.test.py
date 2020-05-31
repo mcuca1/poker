@@ -70,7 +70,7 @@ def OddsToFraction(odds):
 	fraction = odds.as_integer_ratio()
 	numerator = fraction[0]/fraction[0]
 	denominator = fraction[1]/fraction[0]
-	return "%s in %s" % ( int(round(numerator, 0)), round(denominator, 1) )
+	return "(%s in %s)" % ( int(round(numerator, 0)), round(denominator, 1) )
 
 fraction = OddsToFraction(0.27)
 
