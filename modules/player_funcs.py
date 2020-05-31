@@ -84,6 +84,10 @@ def PrintCards(cards):
 	try: return [card.rank + card.suit for card in cards]
 	except: return False
 
+def PrintCardsAsString(cards):
+	try: return ' '.join([card.rank + card.suit for card in cards])
+	except: return False
+
 def PrintPlayers(hand):
 	pprint([(p.name, "$"+str(p.stack.value), "$"+str(p.curbet), p.position) for p in hand.players ])
 	print("\n")

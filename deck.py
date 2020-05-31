@@ -320,7 +320,7 @@ class Hand(object):
 				PrintPots(self)
 				print("\n%s (You) %s\n" % (p.name, p.position))
 				#print("Your Cards:", PrintCards(p.cards), "Your Hand:", p.hand['hand'], PrintCards(p.hand['cards']), "Strength:", p.hand['strength'])
-				if hand.comcards: print("Board Cards:", PrintCards(hand.comcards))
+				if hand.comcards: print("Board Cards:", PrintCardsAsString(hand.comcards))
 				print("\n")
 				# Debug everybody all-in
 				# bet = getattr(p, 'AllIn')(minbet=self.minbet)
@@ -351,7 +351,7 @@ class Hand(object):
 	def ShowDown(self):
 		print("SHOWDOWN\n\n")
 		for p in self.players: print(p.name, "CARDS", PrintCards(p.cards), "HAND", p.hand['hand'], PrintCards(p.hand['cards']), p.hand['strength'])
-		print("BOARD", PrintCards(self.comcards))
+		print("BOARD", PrintCardsAsString(self.comcards))
 		# Let's find if there are any ties
 		# print(Counter([hand['strength'] for hand in [p.hand for p in self.players]]))
 		# PrintPlayers(self)
