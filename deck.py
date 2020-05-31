@@ -218,7 +218,7 @@ class Hand(object):
 		self._comcards = cards
 		for p in self.players: p.GetHandRank()
 	def DealOntable(self, number):
-		self.comcards = [*self.comcards, *PickRandomCards(number)] if not self.debug_board else self.comcards + GetCardsfromPrintCards(self.debug_board[:number])
+		self.comcards = [*self.comcards, *PickRandomCards(number)] if not self.debug_board else GetCardsfromPrintCards(self.debug_board[:(self.street+1)])
 	def NewStreet(self):
 		self.street +=1
 		# Move foldeed players
