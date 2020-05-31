@@ -11,7 +11,6 @@ from collections import defaultdict
 from modules.hand_funcs import *
 from modules.player_funcs import *
 
-
 def MapStreet(idx):
 	streets = dict([(2,'PreFlop'),(3,'Flop'),(4,'Turn'),(5,'River')])
 	return streets[idx]
@@ -321,8 +320,11 @@ class Hand(object):
 		# print(Counter([hand['strength'] for hand in [p.hand for p in self.players]]))
 		PrintPlayers(self)
 		PrintPotsDebug(self)
-		unique_hands = sorted(list(set(p.hand['strength'] for p in ActivePlayers(self.players))), reverse=True)
-		print(unique_hands)
+		ranked_unique_hands = sorted(list(set(p.hand['strength'] for p in ActivePlayers(self.players))), reverse=True)
+		for hand in ranked_unique_hands:
+			players_with_hand = ActivePlayersWithHand(self.players, hand)
+			
+
 	def PreFlop(self):
 		self.NewStreet()
 		# Let's deal the cards to each player

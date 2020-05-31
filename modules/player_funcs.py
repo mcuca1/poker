@@ -100,3 +100,6 @@ def PrintPots(hand):
 def PrintPotsDebug(hand):
 	for pot in hand.pots:
 		print(hand.pots.index(pot), pot.value, GetPotStakes(pot), pot.MAX)
+
+def ActivePlayersWithHand(players, hand):
+	return [p for p in players if p.hand['strength'] == hand]
