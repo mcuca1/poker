@@ -131,26 +131,21 @@ class Player(object):
 		# Only exception is the first raise preflop that has to be at least 2*BB
 		if bets[0] == 2*hand.small_blind: minbet = 4*hand.small_blind
 		betsize = self._bet(minbet=minbet)
-		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "raise", betsize, self.position])
 		return betsize
 	def Bet(self, minbet):
 		self.last_action = "Bet"
 		betsize = self._bet(minbet=minbet)
-		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "bet", betsize, self.position])
 		return betsize
 	def Check(self, minbet):
 		self.last_action = "Check"
-		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "check", self.position])
 		return self._bet(minbet=minbet, betsize=0)
 	def AllIn(self, minbet):
 		self.last_action = "AllIn"
-		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "all in", self.stack.value, self.position])
 		return self._bet(minbet=minbet, betsize=self.stack.value)
 	def Call(self, minbet):
 		self.last_action = "Call"
 		minbet = minbet - self.curbet
 		betsize = minbet if minbet <= self.stack.value else self.stack.value 
-		#hand.history.append([StreetIdxToStreet(hand.street), self.name, "call", betsize, self.position])
 		return self._bet(minbet=minbet, betsize=betsize)
 	def Fold (self, *args, **kwargs):
 		#hand.players.remove(self)
