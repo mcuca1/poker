@@ -44,3 +44,6 @@ Hand info, what players did! Should be printed for interactive player
 ####
 fractions of pot betsizes
 multiples of previous bet raises
+
+
+start starts street from current street..

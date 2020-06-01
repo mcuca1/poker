@@ -12,6 +12,7 @@ from modules.hand_funcs import *
 from modules.player_funcs import *
 from pprint import pprint
 from fractions import Fraction
+from uuid import uuid1
 
 def MapStreet(idx):
 	streets = dict([(2,'PreFlop'),(3,'Flop'),(4,'Turn'),(5,'River')])
@@ -105,19 +106,21 @@ class Player(object):
 	def _bet(self, minbet=False, betsize=False):
 		minbet = minbet - self.curbet
 		if betsize is False: betsize = self.BetPrompt(minbet)
-		self.curbet = self.curbet + betsize
 		## Action special definitions
 		if betsize == self.stack.value: self.last_action = "AllIn"
-		if hand.street == 2 and (betsize == hand.small_blind or betsize == hand.small_blind*2) and self.index >= hand.start_players_n-2: self.last_action = "Post"
+		## Big and small blind "Post" the blinds
+		if hand.street == 2 and (betsize == hand.small_blind or betsize == hand.small_blind*2) and self.index >= hand.start_players_n-2 and self.curbet == 0: self.last_action = "Post"
 		if self.last_action == "Raise" and betsize == minbet: self.last_action = "MinRaise"
 		TakeValue(self.stack, betsize)
+		self.curbet = self.curbet + betsize
 		# Need to trigger value change
 		self.stack = self.stack
 		#self.stack = self.stack - betsize
 		main_pot = hand.pots[0]
 		main_pot.Add((betsize), self.name)
 		#hand.minbet = self.curbet
-		hand.history.append([StreetIdxToStreet(hand.street), self.name, self.last_action, betsize, self.position])
+		betsize_in_hand_history = str(betsize) if self.last_action != "Check" else ""
+		hand.history.append([StreetIdxToStreet(hand.street), self.name, self.last_action, betsize_in_hand_history, self.position])
 		return self.curbet
 	def Raise(self, *args, **kwargs):
 		self.last_action = "Raise"
@@ -200,13 +203,17 @@ class Pot(object):
 
 class Hand(object):
 	def __init__(self, debug=False):
+		self.init = False
+		self.id = str(uuid1().hex)
+		self.history = []
+		self.history.append(["Hand Id:", self.id])
 		self.over = False
+		self.completed = False
 		self.betting = True
 		self.debug = debug
 		self.deck = Deck()
 		self.pots = [Pot()]
-		self.street = 1
-		self.history = []
+		self.street = 2
 		self.debug_board = ['J♥', 'T♥', '9♦', '7♠', 'T♠'] if debug == True else None
 		self.small_blind = 10
 		self._comcards = []
@@ -235,6 +242,9 @@ class Hand(object):
 		self.players = list(self.players)
 		# Let's convert player indexes into table positions
 		PopulatePositions(self.players)
+		# The last player to act was the big blind, or straddle when we introduce it..
+		# So we might change this to player with biggest bet etc
+		self.last_player_to_act = self.start_players_n-1
 	@property
 	def comcards(self):
 		return self._comcards
@@ -243,9 +253,9 @@ class Hand(object):
 		self._comcards = cards
 		for p in self.players: p.GetHandRank()
 	def DealOntable(self, number):
-		self.comcards = [*self.comcards, *PickRandomCards(number)] if not self.debug_board else GetCardsfromPrintCards(self.debug_board[:(self.street+1)])
+		self.comcards = [*self.comcards, *PickRandomCards(number)] if not self.debug_board else GetCardsfromPrintCards(self.debug_board[:(self.street)])
 	def NewStreet(self):
-		self.street +=1
+		self.history.append(["New Street:", StreetIdxToStreet(self.street)])
 		# Move foldeed players
 		self.folded_players = self.folded_players + [p for p in self.players if p.curbet == 'Fold']
 		# Remove folded players
@@ -255,12 +265,6 @@ class Hand(object):
 		# and set the minimum bet to the big blind again
 		self.minbet = self.small_blind*2
 		self.curbet = self.minbet
-	# def Over(self):
-	# 	if self.over:
-	# 		winning_player = next(filter(lambda p: p.curbet != 'Fold', self.players))
-	# 		winning_player.stack = winning_player.stack + self.pot
-	# 		self.pot = 0
-	# 		return True
 	def PlayerBettingOver(self):
 		#Skip betting turn if player has folded or is all in 
 		return True if p.curbet == 'Fold' or p.stack.value == 0 else False
@@ -313,6 +317,7 @@ class Hand(object):
 		end = False
 		while True:
 			for idx, p in enumerate(self.players):
+				self.last_player_to_act = self.players.index(p)-1
 				if self.HandBettingOver():
 					end = True
 					break
@@ -346,10 +351,13 @@ class Hand(object):
 				#if "Raise" in player_options: p.info.append("Min Raise: $%s", % )
 				PrintInfo(p.info)
 				bet = getattr(p, Action(player_options))(minbet=self.minbet)
-				if not p.curbet == "Fold": 
+				if not p.curbet == "Fold":
 					self.curbet = bet
 					self.minbet = bet if bet > self.minbet else self.minbet
 				if self.StreetBettingOver(idx):
+					# We want to close the street and save the hand immediately
+					self.street +=1
+					PersistHand(self)
 					self.HandBettingOver()
 					end = True
 					break
@@ -398,14 +406,14 @@ class Hand(object):
 	def PositionPlayersForFlop(self):
 		# Sort remaining players based on their flop_index, unless it's heads up and they need to be swapped
 		if self.start_players_n > 2: 
-			self.players.sort(key=lambda p: p.flop_index) 
+			self.players.sort(key=lambda p: p.flop_index)
 		else:
 			self.players[0], self.players[1] = self.players[1], self.players[0]
+	def DealCardsToPlayers(self):
+		for p in self.players: 
+			p.cards = GetCardsfromPrintCards(p.debug_cards) if (self.debug == True and p.debug_cards) else PickRandomCards(2)		
 	def PreFlop(self):
 		self.NewStreet()
-		# Let's deal the cards to each player
-		for p in self.players: 
-			p.cards = GetCardsfromPrintCards(p.debug_cards) if (self.debug == True and p.debug_cards) else PickRandomCards(2)
 		# Small and big blind, pay!
 		self.players[-2]._bet(betsize=self.small_blind)
 		self.players[-1]._bet(betsize=self.small_blind*2)
@@ -428,9 +436,20 @@ class Hand(object):
 		self.DealOntable(1)
 		if self.betting: self.BettingRound()
 		self.ShowDown()
-	def Start(self):	
+	def Run(self):
+		#!! This code runs only the FIRST time the hand is run
+		# We deal cards to players before saving the hand, if the hand during preflop betting, we want the cards to be the same
+		if not self.init:
+			self.DealCardsToPlayers()
+			self.init = True
+			PersistHand(self)
 		for street in STREETS():
-			getattr(self, street)()
+			# Skip completed streets if we are resuming
+			if StreetNameToIdx(street) >= self.street:
+				getattr(self, street)()
 
-hand = Hand()
-hand.Start()
+
+
+# hand = Hand()
+hand = LoadHand()
+hand.Run()

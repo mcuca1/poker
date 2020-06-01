@@ -1,3 +1,5 @@
+import os, pickle, glob
+
 def TakeValue(fromthis, thismuch):
 	if fromthis.value > thismuch:
 		fromthis.value = fromthis.value - thismuch
@@ -62,3 +64,33 @@ def StreetIdxToStreet(idx):
 	5: 'River'
 	}
 	return streetsdict[idx]
+
+def StreetNameToIdx(name):
+	streetsdict = {
+	2: 'PreFlop',
+	3: 'Flop',
+	4: 'Turn',
+	5: 'River'
+	}
+	reversstreetsdict = dict((v,k) for k,v in streetsdict.items())
+	return reversstreetsdict[name]
+
+def PersistHand(hand):
+	#curdir = os.path.dirname(os.path.realpath(__file__))
+	hand_filepath = os.path.join("C:\\Users\\marco\\Documents\\GitHub\\poker", "hands", hand.id)
+	with open(hand_filepath, 'wb') as hand_file:
+		pickle.dump(hand, hand_file)
+	hand_file.close()
+
+def LoadHand(hand_id=None):
+	#curdir = os.path.dirname(os.path.realpath(__file__))
+	rootdir = "C:\\Users\\marco\\Documents\\GitHub\\poker"
+	if hand_id:
+		hand_filepath = os.path.join(rootdir, "hands", hand_id)
+	else:
+		latest_saved_hand = max(glob.glob(os.path.join(rootdir, "hands", "*")), key=os.path.getctime)
+		hand_filepath = latest_saved_hand
+	with open(hand_filepath, 'rb') as hand_file:
+		hand = pickle.load(hand_file)
+	return hand
+
