@@ -244,7 +244,7 @@ class Hand(object):
 		PopulatePositions(self.players)
 		# The last player to act was the big blind, or straddle when we introduce it..
 		# So we might change this to player with biggest bet etc
-		self.last_player_to_act = self.start_players_n-1
+		self.last_player_to_act = False
 	@property
 	def comcards(self):
 		return self._comcards
@@ -317,7 +317,6 @@ class Hand(object):
 		end = False
 		while True:
 			for idx, p in enumerate(self.players):
-				self.last_player_to_act = self.players.index(p)-1
 				if self.HandBettingOver():
 					end = True
 					break
@@ -354,11 +353,17 @@ class Hand(object):
 				if not p.curbet == "Fold":
 					self.curbet = bet
 					self.minbet = bet if bet > self.minbet else self.minbet
+				# This is the point of save of the single player betting action
+				self.last_player_to_act = self.players.index(p)
+				PersistHand(self)
 				if self.StreetBettingOver(idx):
-					# We want to close the street and save the hand immediately
+					# We want to close the street and save the hand immediately after dealing the next table cards
+					self.HandBettingOver()
+					cards_to_deal = 3 if self.street == 2 else 1
+					self.DealOntable(cards_to_deal)
+					if self.street == 2: self.PositionPlayersForFlop()
 					self.street +=1
 					PersistHand(self)
-					self.HandBettingOver()
 					end = True
 					break
 				print("\n\n\n\n")
@@ -415,27 +420,27 @@ class Hand(object):
 	def PreFlop(self):
 		self.NewStreet()
 		# Small and big blind, pay!
-		self.players[-2]._bet(betsize=self.small_blind)
-		self.players[-1]._bet(betsize=self.small_blind*2)
+		# Do not pay again if Preflop is being resumed
+		if not self.last_player_to_act:
+			self.players[-2]._bet(betsize=self.small_blind)
+			self.players[-1]._bet(betsize=self.small_blind*2)
+			self.last_player_to_act = self.start_players_n-1
 		# Start betting round
 		self.BettingRound()
 	def Flop(self):
 		if self.over: return True
 		self.NewStreet()
-		self.PositionPlayersForFlop()
-		self.DealOntable(3)
 		if self.betting: self.BettingRound()
 	def Turn(self):
 		if self.over: return True
 		self.NewStreet()
-		self.DealOntable(1)
 		if self.betting: self.BettingRound()
 	def River(self):
 		if self.over: return True
 		self.NewStreet()
-		self.DealOntable(1)
 		if self.betting: self.BettingRound()
 		self.ShowDown()
+	# Streets are starting to look the same, we might want to generalize this
 	def Run(self):
 		#!! This code runs only the FIRST time the hand is run
 		# We deal cards to players before saving the hand, if the hand during preflop betting, we want the cards to be the same
@@ -445,11 +450,11 @@ class Hand(object):
 			PersistHand(self)
 		for street in STREETS():
 			# Skip completed streets if we are resuming
-			if StreetNameToIdx(street) >= self.street:
+			if StreetNameToIdx(street) >= self.street: 
 				getattr(self, street)()
 
 
 
-# hand = Hand()
-hand = LoadHand()
+hand = Hand()
+# hand = LoadHand()
 hand.Run()

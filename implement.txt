@@ -47,3 +47,9 @@ multiples of previous bet raises
 
 
 start starts street from current street..
+
+ok cards are dealt before state is saved..
+
+but the before the betting round we check to see if there is a betting history for that street, and if there is we run it
+the problem is we have to insert ourselves in the loop, I think what we can do is impersonate the players...until the history ends
+and becomes interactive again
