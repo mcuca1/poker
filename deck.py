@@ -317,6 +317,9 @@ class Hand(object):
 		end = False
 		while True:
 			for idx, p in enumerate(self.players):
+				# We need to start this at the playter after the last who acted
+				# This won't be the case if we are resuming, in that case we go forward until that't true again
+				if not self.last_player_to_act == self.players.index(self.players[self.players.index(p)-1]): continue
 				if self.HandBettingOver():
 					end = True
 					break
@@ -455,6 +458,6 @@ class Hand(object):
 
 
 
-hand = Hand()
-# hand = LoadHand()
+# hand = Hand()
+hand = LoadHand()
 hand.Run()
