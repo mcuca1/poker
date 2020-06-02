@@ -208,7 +208,8 @@ class Hand(object):
 		self.history = []
 		self.history.append(["Hand Id:", self.id])
 		self.over = False
-		self.completed = False
+		self.complete = False
+		self.street_complete = True
 		self.betting = True
 		self.debug = debug
 		self.deck = Deck()
@@ -244,7 +245,7 @@ class Hand(object):
 		PopulatePositions(self.players)
 		# The last player to act was the big blind, or straddle when we introduce it..
 		# So we might change this to player with biggest bet etc
-		self.last_player_to_act = False
+		self.last_player_to_act = {}
 	@property
 	def comcards(self):
 		return self._comcards
@@ -255,6 +256,8 @@ class Hand(object):
 	def DealOntable(self, number):
 		self.comcards = [*self.comcards, *PickRandomCards(number)] if not self.debug_board else GetCardsfromPrintCards(self.debug_board[:(self.street)])
 	def NewStreet(self):
+		if not self.street_complete: return False
+		self.street_complete = False
 		self.history.append(["New Street:", StreetIdxToStreet(self.street)])
 		# Move foldeed players
 		self.folded_players = self.folded_players + [p for p in self.players if p.curbet == 'Fold']
@@ -319,7 +322,9 @@ class Hand(object):
 			for idx, p in enumerate(self.players):
 				# We need to start this at the playter after the last who acted
 				# This won't be the case if we are resuming, in that case we go forward until that't true again
-				if not self.last_player_to_act == self.players.index(self.players[self.players.index(p)-1]): continue
+				print(self.last_player_to_act, "Should Be:", self.players.index(self.players[self.players.index(p)-1]))
+				if self.last_player_to_act["street"] == self.street:
+					if not self.last_player_to_act["index"] == self.players.index(self.players[self.players.index(p)-1]): continue
 				if self.HandBettingOver():
 					end = True
 					break
@@ -357,7 +362,7 @@ class Hand(object):
 					self.curbet = bet
 					self.minbet = bet if bet > self.minbet else self.minbet
 				# This is the point of save of the single player betting action
-				self.last_player_to_act = self.players.index(p)
+				self.last_player_to_act = {"index": self.players.index(p), "street": self.street}
 				PersistHand(self)
 				if self.StreetBettingOver(idx):
 					# We want to close the street and save the hand immediately after dealing the next table cards
@@ -365,6 +370,7 @@ class Hand(object):
 					cards_to_deal = 3 if self.street == 2 else 1
 					self.DealOntable(cards_to_deal)
 					if self.street == 2: self.PositionPlayersForFlop()
+					self.street_complete = True
 					self.street +=1
 					PersistHand(self)
 					end = True
@@ -427,7 +433,8 @@ class Hand(object):
 		if not self.last_player_to_act:
 			self.players[-2]._bet(betsize=self.small_blind)
 			self.players[-1]._bet(betsize=self.small_blind*2)
-			self.last_player_to_act = self.start_players_n-1
+			self.last_player_to_act['index'] = self.start_players_n-1
+			self.last_player_to_act['street'] = self.street
 		# Start betting round
 		self.BettingRound()
 	def Flop(self):
