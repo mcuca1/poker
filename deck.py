@@ -414,9 +414,6 @@ class Hand(object):
 			# log winning hands and value taken by players
 			# Nothing more to take, we are done
 			if not len(PotsWithValue(self.pots)): break
-		PrintPotsDebug(self)
-		pprint(self.winning_hands)
-		pprint([(p.name, p.starting_stack, p.stack.value, (p.stack.value-p.starting_stack)) for p in self.players])
 	def PositionPlayersForFlop(self):
 		# Sort remaining players based on their flop_index, unless it's heads up and they need to be swapped
 		if self.start_players_n > 2: 
@@ -462,9 +459,11 @@ class Hand(object):
 			# Skip completed streets if we are resuming
 			if StreetNameToIdx(street) >= self.street: 
 				getattr(self, street)()
+		PrintPotsDebug(self)
+		pprint(self.winning_hands)
+		pprint([(p.name, p.starting_stack, p.stack.value, (p.stack.value-p.starting_stack)) for p in self.players])
 
 
-
-# hand = Hand()
-hand = LoadHand()
+hand = Hand()
+# hand = LoadHand()
 hand.Run()
