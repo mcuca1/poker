@@ -50,8 +50,8 @@ def point_on_circle(center, radius, angle, xscale, yscale):
 	return x,y
 
 
-def GetBmpFromSvg(card, rotation):
-	cards_root = "C:\\Users\\marco\\Desktop\\testsvg\\flat_cards"
+def GetCardFromFile(card, rotation):
+	cards_root = r'C:\Users\marco\Documents\GitHub\poker\cards'
 	card_path = os.path.join(cards_root, card + ".svg")
 	print(card_path)
 	svg = svgutils.transform.fromfile(card_path)
@@ -64,8 +64,7 @@ def GetBmpFromSvg(card, rotation):
 	figure = svgutils.compose.Figure(svg.height, svg.width, originalSVG)
 	figure_bytes = figure.tostr()
 	svg_image = wx.svg.SVGimage.CreateFromBytes(figure_bytes)
-	bitmap = svg_image.ConvertToBitmap(scale=0.4, width=int(svg_image.width)*2, height=int(svg_image.height)*2)
-	return bitmap
+	return svg_image
 
 
 #----------------------------------------------------------------------
@@ -90,6 +89,9 @@ class MyPanel(wx.Panel):
 		self.Bind(wx.EVT_PAINT, self.OnPaint)
 		self.Bind(wx.EVT_SIZE, self.OnSize)
 
+		self.card1 = GetCardFromFile("AH", -3)
+		self.card2 = GetCardFromFile("KD", 2)
+
 	def OnSize(self,event):
 		print("resize")
 		self.Refresh()
@@ -113,7 +115,8 @@ class MyPanel(wx.Panel):
 		ellipse_a = table_size * xscale
 		ellipse_b = table_size * yscale
 		angles = angles_in_ellipse(n_players, ellipse_a ,ellipse_b)
-		
+		player_size = 30
+		offset = 27
 		sz = self.GetSize()
 		xc = sz[0]/2
 		yc = sz[1]/2
@@ -122,11 +125,22 @@ class MyPanel(wx.Panel):
 			ctx.set_line_width(1)
 			x, y = point_on_circle([xc, yc], table_size*frame_scale, angle, xscale, yscale)
 			ctx.set_line_width(1)
-			ctx.arc(x/1*1, y-27*frame_scale, 27*frame_scale, 0, math.pi*2)
+			ctx.arc(x, y-offset*frame_scale, player_size*frame_scale, 0, math.pi*2)
 			ctx.set_source_rgba(72/255, 71/255, 102/255, 0.9)
 			ctx.fill_preserve()
 			ctx.set_source_rgb(168, 158, 158)
 			ctx.stroke()
+			card_size = 0.165
+			bitmap1 = self.card1.ConvertToBitmap(scale=card_size*frame_scale, width=self.card1.width, height=self.card1.height)
+			bitmap2 = self.card2.ConvertToBitmap(scale=card_size*frame_scale, width=self.card2.width, height=self.card2.height)
+			surface1 = wxcairo.ImageSurfaceFromBitmap(bitmap1)
+			surface2 = wxcairo.ImageSurfaceFromBitmap(bitmap2)
+			ctx.set_source_surface(surface1, x-(player_size*frame_scale), y-(offset*2*frame_scale))
+			ctx.paint()
+			ctx.set_source_surface(surface2, x-(player_size/2*frame_scale), y-(offset*2*frame_scale))
+			ctx.paint()
+
+		
 
 	def Render(self, dc):
 		"""
@@ -301,6 +315,7 @@ class MyFrame(wx.Frame):
 		"""
 
 		self.SetMinSize((640, 400))
+		self.SetSize((1280, 800))
 
 		#------------
 
