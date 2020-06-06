@@ -334,6 +334,7 @@ class Hand(object):
 						end = True
 						break
 					continue
+				os.system('cls')
 				PrintHistory(self.history)
 				PrintPlayers(self)
 				PrintPots(self)

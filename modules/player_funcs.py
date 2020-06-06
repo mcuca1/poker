@@ -9,7 +9,7 @@ def PLAYERS():
 				(['Player4', 2000], {'debug_cards': ['8♣', '2♠']}), 
 				(['Player5', 1500], {'debug_cards': ['7♦', '2♣']})
 				]
-	return [([p[0][0], ValueContainer(p[0][1])], p[1]) for p in players[:4]]
+	return [([p[0][0], ValueContainer(p[0][1])], p[1]) for p in players]
 
 def PopulatePositions(players):
 	number_of_players = len(players)
