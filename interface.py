@@ -38,6 +38,7 @@ def angles_in_ellipse(num, b ,a):
 	angles = [angle*180/pi+90 for angle in angles]
 	print(angles)
 	return angles
+	
 def point_on_circle(center, radius, angle, xscale, yscale):
 	'''
 		Finding the x,y coordinates on circle, based on given angle
@@ -89,7 +90,7 @@ class MyPanel(wx.Panel):
 		self.Bind(wx.EVT_PAINT, self.OnPaint)
 		self.Bind(wx.EVT_SIZE, self.OnSize)
 
-		self.card1 = GetCardFromFile("AH", -3)
+		self.card1 = GetCardFromFile("KH", -3)
 		self.card2 = GetCardFromFile("KD", 2)
 
 	def OnSize(self,event):
@@ -314,8 +315,8 @@ class MyFrame(wx.Frame):
 		...
 		"""
 
-		self.SetMinSize((640, 400))
-		self.SetSize((1280, 800))
+		self.SetMinSize((640, 460))
+		self.SetSize((1280, 900))
 
 		#------------
 

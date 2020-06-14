@@ -1,0 +1,50 @@
+showdown doesn't get to river??
+
+What's this???
+
+Hand History:  Hand Id: 3fca6000ae7611eaa4c100d86157a0ac
+Hand History:  New Street: PreFlop
+Hand History:  PreFlop Player2 Post 10 Small Blind
+Hand History:  PreFlop Player3 Post 20 Big Blind
+Hand History:  PreFlop Player4 Raise 300 UTG
+Hand History:  PreFlop Player5 AllIn 1500 UTG+1
+Hand History:  PreFlop Player0 AllIn 500 CutOff
+Hand History:  PreFlop Player1 AllIn 750 Dealer
+Hand History:  PreFlop Player2 AllIn 790 Small Blind
+Hand History:  PreFlop Player3 AllIn 830 Big Blind
+
+
+[('Player4', '$1700', '$300', 'UTG '),
+ ('Player5', '$0', '$1500', 'UTG+1'),
+ ('Player0', '$0', '$500', 'CutOff     '),
+ ('Player1', '$0', '$750', 'Dealer     '),
+ ('Player2', '$0', '$800', 'Small Blind'),
+ ('Player3', '$0', '$850', 'Big Blind  ')]
+
+
+POT N1 = $2800
+POT N2 = $1000
+POT N3 = $150
+POT N4 = $100
+POT N5 = $650
+
+Player4 (You) UTG
+
+
+
+Info: Your stack: $1700
+Info: To Call: $1200
+Info: Pot Odds: 0.71 or one in 1.4
+Info: Your Cards: A♥ 5♣ Your Hand: HighCard
+
+
+Action:
+1) Fold
+2) Call
+3) Raise
+4) AllIn
+Enter number: 3
+Player4, enter bet size 1850-1700
+1700
+Invalid integer. The number must be in the range of 1850-1700.
+Player4, enter bet size 1850-1700
