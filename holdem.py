@@ -74,6 +74,19 @@ class Player(object):
 	def cards(self, cards):
 		self._cards = cards
 		self.GetHandRank()
+	def GetMinRaise(self):
+		# Let's get all the bets in the current session, and sort them by size:
+		bets = sorted(list(set([p.curbet for p in hand.players if isinstance(p.curbet, int)])), reverse=True)
+		# Big blind preflop is a raise if everybody called, but would break as there  is no smaller bet
+		try:
+			bets[1]
+		except IndexError:
+			bets.append(0)
+		# Min raise is twice the difference betweem the larger and second larger bet, adding self.curbet as it's going to be subtracted
+		minraise = bets[0]+(bets[0]-bets[1])
+		# Only exception is the first raise preflop that has to be at least 2*BB
+		if bets[0] == 2*hand.small_blind: minraise = 4*hand.small_blind		
+		return minraise
 	def GenOptions(self):
 		options = []
 		# You can always fold
@@ -91,7 +104,9 @@ class Player(object):
 			options.append("Bet")
 		options.append("AllIn")
 		# and they are in the same pot, which they wouldnt be if they went all in on flop with smaller stack
-		if any([p for p in hand.players if isinstance(p.curbet, int) and p.curbet >= self.stack.value]):
+		if (any([p for p in hand.players if isinstance(p.curbet, int) and p.curbet >= self.stack.value]) or
+		# if minraise is bigger than our stack, we can only call or go all in
+		self.GetMinRaise() > self.stack.value):
 			options.remove("Raise")
 		return options
 	def BetPrompt(self, minbet):
@@ -124,17 +139,7 @@ class Player(object):
 		return self.curbet
 	def Raise(self, *args, **kwargs):
 		self.last_action = "Raise"
-		# Let's get all the bets in the current session, and sort them by size:
-		bets = sorted(list(set([p.curbet for p in hand.players if isinstance(p.curbet, int)])), reverse=True)
-		# Big blind preflop is a raise if everybody called, but would break as there  is no smaller bet
-		try:
-			bets[1]
-		except IndexError:
-			bets.append(0)
-		# Min raise is twice the difference betweem the larger and second larger bet, adding self.curbet as it's going to be subtracted
-		minbet = bets[0]+(bets[0]-bets[1])
-		# Only exception is the first raise preflop that has to be at least 2*BB
-		if bets[0] == 2*hand.small_blind: minbet = 4*hand.small_blind
+		minbet = self.GetMinRaise()
 		betsize = self._bet(minbet=minbet)
 		return betsize
 	def Bet(self, minbet):
@@ -367,8 +372,10 @@ class Hand(object):
 				PersistHand(self)
 				if self.StreetBettingOver(idx):
 					# We want to close the street and save the hand immediately after dealing the next table cards
-					self.HandBettingOver()
-					cards_to_deal = 3 if self.street == 2 else 1
+					if self.HandBettingOver():	
+						cards_to_deal = 5-(len(self.comcards))
+					else:	
+						cards_to_deal = 3 if self.street == 2 else 1
 					self.DealOntable(cards_to_deal)
 					if self.street == 2: self.PositionPlayersForFlop()
 					self.street_complete = True
